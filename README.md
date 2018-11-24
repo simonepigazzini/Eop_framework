@@ -12,11 +12,13 @@ NOTE
 
 
 ## Setup
+compilation with cmake should be fine with much more compiler/o.s./rootversion 
    ```
-   git clone git@github.com:fabio-mon/Eop_framework.git
+   git clone -b cmake_compiled git@github.com:fabio-mon/Eop_framework.git
    cd Eop_framework
-   git submodule update --init --recursive
-   mkdir bin obj 
+   mkdir build
+   cd build && cmake ..
    make
-   make exe
    ```
+NOTE: if you add a new class you have to re-run `cd build && cmake ..`
+NOTE: if you add a new executable you have to properly modify the CMakeList.txt and then re-run `cd build && cmake ..`
