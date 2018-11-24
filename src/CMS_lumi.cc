@@ -1,4 +1,4 @@
-#include "interface/CMS_lumi.h"
+#include "CMS_lumi.h"
 
 using namespace std;
 

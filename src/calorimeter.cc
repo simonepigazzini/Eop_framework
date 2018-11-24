@@ -1,4 +1,4 @@
-#include "interface/calorimeter.h"
+#include "calorimeter.h"
 
 using namespace std;
 

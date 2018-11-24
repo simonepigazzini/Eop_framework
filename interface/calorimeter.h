@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include "CfgManager/interface/CfgManager.h"
-#include "CfgManager/interface/CfgManagerT.h"
-#include "interface/crystal.h"
+#include "CfgManager.h"
+#include "CfgManagerT.h"
+#include "crystal.h"
 
 #include "TTree.h"
 #include "TChain.h"
