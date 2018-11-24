@@ -31,11 +31,14 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/interface/*.h )
 #
 add_executable(BuildEopEta main/BuildEopEta.cpp ${sources} ${headers})
 target_link_libraries(BuildEopEta ${ROOT_LIBRARIES})
+add_executable(drawComparisonPlots main/drawComparisonPlots.cpp ${sources} ${headers})
+target_link_libraries(drawComparisonPlots ${ROOT_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
 install(TARGETS BuildEopEta DESTINATION bin)
+install(TARGETS drawComparisonPlots DESTINATION bin)
 
 
 # If necessary, use the RELATIVE flag, otherwise each source file may be listed 

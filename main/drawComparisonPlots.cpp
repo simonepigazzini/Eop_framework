@@ -1,7 +1,7 @@
-#include "CfgManager/interface/CfgManager.h"
-#include "CfgManager/interface/CfgManagerT.h"
-#include "interface/SetTDRStyle.h"
-#include "interface/Plotter.h"
+#include "CfgManager.h"
+#include "CfgManagerT.h"
+#include "SetTDRStyle.h"
+#include "Plotter.h"
 
 #include <iostream>
 #include <fstream>
