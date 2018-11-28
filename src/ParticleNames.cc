@@ -1,4 +1,4 @@
-#include "interface/ParticleNames.h"
+#include "ParticleNames.h"
 
 
 

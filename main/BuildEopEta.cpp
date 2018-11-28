@@ -1,7 +1,7 @@
-#include "CfgManager/interface/CfgManager.h"
-#include "CfgManager/interface/CfgManagerT.h"
-#include "interface/calorimeter.h"
-#include "interface/crystal.h"
+#include "CfgManager.h"
+#include "CfgManagerT.h"
+#include "calorimeter.h"
+#include "crystal.h"
 
 #include <iostream>
 #include <string>

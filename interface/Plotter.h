@@ -1,7 +1,7 @@
-#include "CfgManager/interface/CfgManager.h"
-#include "CfgManager/interface/CfgManagerT.h"
+#include "CfgManager.h"
+#include "CfgManagerT.h"
 
-#include "interface/CMS_lumi.h"
+#include "CMS_lumi.h"
 
 #include <iostream>
 #include <string>
