@@ -55,7 +55,8 @@ void calorimeter::BranchExtraCalib(TChain* chain)
 
 calorimeter::calorimeter(CfgManager conf):
   electron_momentum_correction(0),
-  positron_momentum_correction(0)
+  positron_momentum_correction(0),
+  weight(0)
 {
   //-------------------------------------
   //initialize chain and branch tree
@@ -173,13 +174,11 @@ void calorimeter::LoadEopWeight(const vector<string> &weightcfg)
   //delete previous weight to avoid memory leak
   if(weight)
     delete weight;
-
-  string type = weightcfg[0];
-
+  string type = weightcfg.at(0);
   if(type=="TH2F")
   {
-    string objkey   = weightcfg[1];
-    string filename = weightcfg[2];
+    string objkey   = weightcfg.at(1);
+    string filename = weightcfg.at(2);
     cout<<"> Loading E/p weight as TH2F from "<<filename<<"/"<<objkey<<endl;
     TFile* inweightfile = new TFile(filename.c_str(),"READ");
     weight = (TH2F*) inweightfile->Get(objkey.c_str());
@@ -206,7 +205,7 @@ void calorimeter::LoadIC(const std::vector<std::string> &ICcfg)
   Nphi=ICmap->GetNbinsX();
   iphimin=ICmap->GetXaxis()->GetXmin();
   iphimax=ICmap->GetXaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
-  cout<<">>> Neta="<<Neta<<" in ["<<ietamin<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin<<","<<iphimax<<"]"<<endl;
+  //cout<<">>> Neta="<<Neta<<" in ["<<ietamin<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin<<","<<iphimax<<"]"<<endl;
 
   xtal = new crystal*[Nphi];
   for(int iphi = 0; iphi < Nphi; ++iphi)
@@ -345,7 +344,7 @@ Float_t calorimeter::GetICEnergy(const Int_t &i)
 	if(ieta>=Neta || iphi>=Nphi || ieta<0 || iphi<0)
 	  continue;
 	IC = (xtal[iphi][ieta]).IC;
-	cout<<"IC=("<<ieta<<","<<iphi<<")="<<IC<<endl;
+	//cout<<"IC=("<<ieta<<","<<iphi<<")="<<IC<<endl;
 	E += kRegression * energyRecHitSCEle2->at(iRecHit) * fracRecHitSCEle2->at(iRecHit) * IC;
       }
     }
@@ -353,7 +352,7 @@ Float_t calorimeter::GetICEnergy(const Int_t &i)
   return E;
 }
 
-Float_t  calorimeter::GetWeight(const Float_t &Eop,const Float_t &Eta)
+Float_t  calorimeter::GetWeight(const Float_t &Eta, const Float_t &Eop)
 {
-  return weight->GetBinContent(weight->FindBin(Eop,Eta));
+  return weight->GetBinContent(weight->FindBin(Eta,Eop));
 }

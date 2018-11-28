@@ -63,7 +63,10 @@ int main(int argc, char* argv[])
     EB.GetEntry(ientry);
     if(EB.isSelected(0))
     {
-      EB.GetICEnergy(0);
+      float E = EB.GetICEnergy(0);
+      float p = EB.GetPcorrected(0);
+      float eta = EB.GetEtaSC(0);
+      cout<<"weight("<<E<<" \ "<<p<<" for eta= "<<eta<<") = "<<EB.GetWeight(eta,E/p)<<endl;
       //cout<<"p="<<EB.GetP(0)<<"\tpcorr="<<EB.GetPcorrected(0)<<endl;
       //cout<<"\tE="<<EB.GetEnergy(0)<<"E(ICweighted)="<< EB.GetICEnergy(0) <<endl;
     }

@@ -48,9 +48,33 @@ int main(int argc, char* argv[])
   //define the calorimeter object to easily access to the ntuples data
   calorimeter EB(config);
 
+  float ietamin, ietamax, iphimin, iphimax;
+  ietamin = config.GetOpt<int> ("Input.ietamin");
+  ietamax = config.GetOpt<int> ("Input.ietamax");
+  iphimin = config.GetOpt<int> ("Input.iphimin");
+  iphimax = config.GetOpt<int> ("Input.iphimax");
+  int Neta=ietamax-ietamin+1;
+  int Nphi=iphimax-iphimin+1;
+
   //define the output histo
-  TFile *outFile = new TFile(("EopEta_"+label+".root").Data(),"RECREATE");
-  TH2F* Eop_vs_Eta = new TH2F(("EopEta_"+label).Data(),("EopEta_"+label).Data(), 171, -1.4775, +1.4775, 100, 0.2, 1.9);
+  if(conf.OptExist("Input.inputIC"))
+    LoadIC( conf.GetOpt<std::vector<std::string> > ("Input.inputIC") );
+  else
+    if(conf.OptExist("Input.ietamin") && conf.OptExist("Input.ietamax") && conf.OptExist("Input.iphimin") && conf.OptExist("Input.iphimax"))
+    {
+      ietamin = conf.GetOpt<int> ("Input.ietamin");
+      ietamax = conf.GetOpt<int> ("Input.ietamax");
+      iphimin = conf.GetOpt<int> ("Input.iphimin");
+      iphimax = conf.GetOpt<int> ("Input.iphimax");
+      InitializeIC();
+    }
+
+  TFile *outFile = new TFile(("IC_"+label+".root").Data(),"RECREATE");
+  TH2F* newIC = new TH2F(("IC_"+label).Data(),("IC_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
+  TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
+  TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
+
+  double 1Dnumerator 
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
@@ -64,6 +88,11 @@ int main(int argc, char* argv[])
     {
       if(EB.isSelected(iEle))
       {
+	
+
+	theNumerator[thisIndex] += theScalibration[thisIndex] * energyRecHitSCEle2 -> at(iRecHit) * FdiEta * thisIC / thisE * pIn / thisE * EoPweight;
+	theDenominator[thisIndex] += theScalibration[thisIndex] * energyRecHitSCEle2 -> at(iRecHit) * FdiEta * thisIC / thisE * EoPweight;
+
 	E=EB.GetICEnergy(iEle);
 	p=EB.GetPcorrected(iEle);
 	eta=EB.GetEtaSC(iEle);
