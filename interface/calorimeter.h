@@ -38,8 +38,17 @@ class calorimeter
   Float_t  GetICEnergy(const Int_t &i);
   Float_t  GetIC(const Int_t &iphi, const Int_t &ieta);
   Float_t  GetWeight(const Float_t &Eop,const Float_t &Eta);
-  const std::vector<float>* GetRecHit1() {return energyRecHitSCEle1;}
-  const std::vector<float>* GetRecHit2() {return energyRecHitSCEle2;}
+  Float_t  GetRegression(const Int_t &i) {return energySCEle[i]/rawEnergySCEle[i];}
+  void     GetEtaboundaries(Float_t &ietamin_, Float_t &ietamax_) {ietamin_=ietamin; ietamax_=ietamax;}
+  void     GetPhiboundaries(Float_t &iphimin_, Float_t &iphimax_) {iphimin_=iphimin; iphimax_=iphimax;}
+  Int_t    GetNeta() {return Neta;}
+  Int_t    GetNphi() {return Nphi;}
+  std::vector<float>* GetERecHit(const Int_t &i)        {return ERecHit[i];}
+  std::vector<float>* GetfracRecHit(const Int_t &i)     {return fracRecHit[i];}
+  std::vector<int>*   GetXRecHit(const Int_t &i)        {return XRecHit[i];}
+  std::vector<int>*   GetYRecHit(const Int_t &i)        {return YRecHit[i];}
+  std::vector<int>*   GetZRecHit(const Int_t &i)        {return ZRecHit[i];}
+  std::vector<int>*   GetrecoFlagRecHit(const Int_t &i) {return recoFlagRecHit[i];}
   void LoadMomentumCorrection(std::string filename);
   void LoadEopWeight(const std::vector<std::string> &weightcfg);
   void LoadIC(const std::vector<std::string> &ICcfg);
@@ -77,19 +86,19 @@ class calorimeter
   //Float_t         etaMCEle[3];
   //Float_t         phiMCEle[3];
   ///! Ele 1 variables
-  std::vector<float>   *energyRecHitSCEle1;
-  std::vector<int>     *XRecHitSCEle1;  //ETA
-  std::vector<int>     *YRecHitSCEle1;  //PHI
-  std::vector<int>     *ZRecHitSCEle1;
-  std::vector<int>     *recoFlagRecHitSCEle1;
-  std::vector<float>   *fracRecHitSCEle1;
+  std::vector<float>   *ERecHit[2];
+  std::vector<int>     *XRecHit[2];  //ETA
+  std::vector<int>     *YRecHit[2];  //PHI
+  std::vector<int>     *ZRecHit[2];
+  std::vector<int>     *recoFlagRecHit[2];
+  std::vector<float>   *fracRecHit[2];
   ///! Ele 2 variables
-  std::vector<float>   *energyRecHitSCEle2;
-  std::vector<int>     *XRecHitSCEle2;  //ETA
-  std::vector<int>     *YRecHitSCEle2;  //PHI
-  std::vector<int>     *ZRecHitSCEle2;
-  std::vector<int>     *recoFlagRecHitSCEle2;
-  std::vector<float>   *fracRecHitSCEle2;
+  //std::vector<float>   *energyRecHitSCEle2;
+  //std::vector<int>     *XRecHitSCEle2;  //ETA
+  //std::vector<int>     *YRecHitSCEle2;  //PHI
+  //std::vector<int>     *ZRecHitSCEle2;
+  //std::vector<int>     *recoFlagRecHitSCEle2;
+  //std::vector<float>   *fracRecHitSCEle2;
 };
 
 

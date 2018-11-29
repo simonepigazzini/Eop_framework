@@ -2,6 +2,7 @@
 
 using namespace std;
 
+
 void calorimeter::BranchSelected(TChain* chain)
 {
   chain->SetBranchAddress("runNumber",          &runNumber);
@@ -24,32 +25,44 @@ void calorimeter::BranchSelected(TChain* chain)
 
 void calorimeter::BranchExtraCalib(TChain* chain)
 {
+  for(int i=0;i<2;++i)
+  {
+    ERecHit[i]=0;
+    XRecHit[i]=0;  //ETA
+    YRecHit[i]=0;  //PHI
+    ZRecHit[i]=0;
+    recoFlagRecHit[i]=0;
+    fracRecHit[i]=0;
+  }
+
   // ele1
-  energyRecHitSCEle1=0;
+  /*  energyRecHitSCEle1=0;
   XRecHitSCEle1=0;
   YRecHitSCEle1=0;
   ZRecHitSCEle1=0;
   recoFlagRecHitSCEle1=0;
   fracRecHitSCEle1=0;
-  chain->SetBranchAddress("energyRecHitSCEle1",   &energyRecHitSCEle1);
-  chain->SetBranchAddress("XRecHitSCEle1",        &XRecHitSCEle1);
-  chain->SetBranchAddress("YRecHitSCEle1",        &YRecHitSCEle1);
-  chain->SetBranchAddress("ZRecHitSCEle1",        &ZRecHitSCEle1);
-  chain->SetBranchAddress("recoFlagRecHitSCEle1", &recoFlagRecHitSCEle1);
-  chain->SetBranchAddress("fracRecHitSCEle1",     &fracRecHitSCEle1);
+  */
+  chain->SetBranchAddress("energyRecHitSCEle1",   &ERecHit[0]);
+  chain->SetBranchAddress("XRecHitSCEle1",        &XRecHit[0]);
+  chain->SetBranchAddress("YRecHitSCEle1",        &YRecHit[0]);
+  chain->SetBranchAddress("ZRecHitSCEle1",        &ZRecHit[0]);
+  chain->SetBranchAddress("recoFlagRecHitSCEle1", &recoFlagRecHit[0]);
+  chain->SetBranchAddress("fracRecHitSCEle1",     &fracRecHit[0]);
   // ele2
-  energyRecHitSCEle2=0;
+  /*  energyRecHitSCEle2=0;
   XRecHitSCEle2=0;
   YRecHitSCEle2=0;
   ZRecHitSCEle2=0;
   recoFlagRecHitSCEle2=0;
   fracRecHitSCEle2=0;
-  chain->SetBranchAddress("energyRecHitSCEle2",   &energyRecHitSCEle2);
-  chain->SetBranchAddress("XRecHitSCEle2",        &XRecHitSCEle2);
-  chain->SetBranchAddress("YRecHitSCEle2",        &YRecHitSCEle2);
-  chain->SetBranchAddress("ZRecHitSCEle2",        &ZRecHitSCEle2);
-  chain->SetBranchAddress("recoFlagRecHitSCEle2", &recoFlagRecHitSCEle2);
-  chain->SetBranchAddress("fracRecHitSCEle2",     &fracRecHitSCEle2);
+  */
+  chain->SetBranchAddress("energyRecHitSCEle2",   &ERecHit[1]);
+  chain->SetBranchAddress("XRecHitSCEle2",        &XRecHit[1]);
+  chain->SetBranchAddress("YRecHitSCEle2",        &YRecHit[1]);
+  chain->SetBranchAddress("ZRecHitSCEle2",        &ZRecHit[1]);
+  chain->SetBranchAddress("recoFlagRecHitSCEle2", &recoFlagRecHit[1]);
+  chain->SetBranchAddress("fracRecHitSCEle2",     &fracRecHit[1]);
 }
 
 
@@ -121,7 +134,7 @@ calorimeter::calorimeter(CfgManager conf):
       InitializeIC();
     }
     else
-      cout<<"[ERROR]: no inputIC, nor ietamin&&ietamax&&iphimin&&iphimax found in Input in cfg"<<endl;
+      cout<<"[WARNING]: no inputIC, nor ietamin&&ietamax&&iphimin&&iphimax found in Input in cfg"<<endl;
 
   //-------------------------------------
   //set true or false the usage of regression --> change the energy value 
@@ -312,42 +325,23 @@ Float_t calorimeter::GetICEnergy(const Int_t &i)
   float IC = 1.;
   int ieta,iphi;
 
-  if(i==0)
+  for(unsigned int iRecHit = 0; iRecHit < ERecHit[i]->size(); iRecHit++) 
   {
-    for(unsigned int iRecHit = 0; iRecHit < energyRecHitSCEle1->size(); iRecHit++) 
-    {
-      if(recoFlagRecHitSCEle1->at(iRecHit) >= 4)
+    if(recoFlagRecHit[i]->at(iRecHit) >= 4)
 	continue;
-      ieta = XRecHitSCEle1->at(iRecHit) - ietamin;
-      iphi = YRecHitSCEle1->at(iRecHit) - iphimin;
+    ieta = XRecHit[i]->at(iRecHit) - ietamin;
+    iphi = YRecHit[i]->at(iRecHit) - iphimin;
 
-      if(ieta>=Neta) cout<<"ieta>=Neta"<<endl;
-      if(iphi>=Nphi) cout<<"iphi>=Nphi"<<endl;
-      if(ieta<0)     cout<<"ieta<0"<<endl;
-      if(iphi<0)     cout<<"iphi<0"<<endl;
+    if(ieta>=Neta) cout<<"ieta>=Neta"<<endl;
+    if(iphi>=Nphi) cout<<"iphi>=Nphi"<<endl;
+    if(ieta<0)     cout<<"ieta<0"<<endl;
+    if(iphi<0)     cout<<"iphi<0"<<endl;
 
-      if(ieta>=Neta || iphi>=Nphi || ieta<0 || iphi<0)
-	continue;
-      IC = (xtal[iphi][ieta]).IC;
-      E += kRegression * energyRecHitSCEle1->at(iRecHit) * fracRecHitSCEle1->at(iRecHit) * IC;
-    }
+    if(ieta>=Neta || iphi>=Nphi || ieta<0 || iphi<0)
+      continue;
+    IC = (xtal[iphi][ieta]).IC;
+    E += kRegression * ERecHit[i]->at(iRecHit) * fracRecHit[i]->at(iRecHit) * IC;
   }
-  else
-    if(i==1)
-    {
-      for(unsigned int iRecHit = 0; iRecHit < energyRecHitSCEle2->size(); iRecHit++) 
-      {
-	if(recoFlagRecHitSCEle2->at(iRecHit) >= 4)
-	  continue;
-	ieta = XRecHitSCEle2->at(iRecHit) - ietamin;
-	iphi = YRecHitSCEle2->at(iRecHit) - iphimin;
-	if(ieta>=Neta || iphi>=Nphi || ieta<0 || iphi<0)
-	  continue;
-	IC = (xtal[iphi][ieta]).IC;
-	//cout<<"IC=("<<ieta<<","<<iphi<<")="<<IC<<endl;
-	E += kRegression * energyRecHitSCEle2->at(iRecHit) * fracRecHitSCEle2->at(iRecHit) * IC;
-      }
-    }
       
   return E;
 }
