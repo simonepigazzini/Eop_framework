@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
   TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
 
-  double 1Dnumerator 
+  double *1Dnumerator = new double[Neta*Nphi];
+  double *1Ddenominator = new double[Neta*Nphi]; 
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
