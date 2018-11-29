@@ -1,7 +1,8 @@
-#include "CfgManager/interface/CfgManager.h"
-#include "CfgManager/interface/CfgManagerT.h"
-#include "interface/calorimeter.h"
-#include "interface/crystal.h"
+#include "CfgManager.h"
+#include "CfgManagerT.h"
+#include "calorimeter.h"
+#include "crystal.h"
+#include "utils.h"
 
 #include <iostream>
 #include <string>
@@ -47,41 +48,34 @@ int main(int argc, char* argv[])
   
   //define the calorimeter object to easily access to the ntuples data
   calorimeter EB(config);
-
+  
+  //eta, phi boundaries are taken by the calorimeter constructor from configfile 
   float ietamin, ietamax, iphimin, iphimax;
-  ietamin = config.GetOpt<int> ("Input.ietamin");
-  ietamax = config.GetOpt<int> ("Input.ietamax");
-  iphimin = config.GetOpt<int> ("Input.iphimin");
-  iphimax = config.GetOpt<int> ("Input.iphimax");
-  int Neta=ietamax-ietamin+1;
-  int Nphi=iphimax-iphimin+1;
-
-  //define the output histo
-  if(conf.OptExist("Input.inputIC"))
-    LoadIC( conf.GetOpt<std::vector<std::string> > ("Input.inputIC") );
-  else
-    if(conf.OptExist("Input.ietamin") && conf.OptExist("Input.ietamax") && conf.OptExist("Input.iphimin") && conf.OptExist("Input.iphimax"))
-    {
-      ietamin = conf.GetOpt<int> ("Input.ietamin");
-      ietamax = conf.GetOpt<int> ("Input.ietamax");
-      iphimin = conf.GetOpt<int> ("Input.iphimin");
-      iphimax = conf.GetOpt<int> ("Input.iphimax");
-      InitializeIC();
-    }
+  int Neta, Nphi;
+  EB.GetEtaboundaries(ietamin, ietamax);
+  EB.GetPhiboundaries(iphimin, iphimax);
+  Neta=EB.GetNeta();
+  Nphi=EB.GetNphi();
 
   TFile *outFile = new TFile(("IC_"+label+".root").Data(),"RECREATE");
-  TH2F* newIC = new TH2F(("IC_"+label).Data(),("IC_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
   TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
 
-  double *1Dnumerator = new double[Neta*Nphi];
-  double *1Ddenominator = new double[Neta*Nphi]; 
+  double *numerator1D = new double[Neta*Nphi];
+  double *denominator1D = new double[Neta*Nphi]; 
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
   cout<<Nentries<<" entries"<<endl;
-  float E,p,eta;
-  int iEle;
+  float E,p,eta,IC,weight,regression;
+  int iEle, index, ieta, iphi;
+  vector<float>* ERecHit;
+  vector<float>* fracRecHit;
+  vector<int>*   XRecHit;
+  vector<int>*   YRecHit;
+  vector<int>*   ZRecHit;
+  vector<int>*   recoFlagRecHit;
+
   for(Long64_t ientry=0 ; ientry<Nentries ; ++ientry)
   {
     EB.GetEntry(ientry);
@@ -89,48 +83,47 @@ int main(int argc, char* argv[])
     {
       if(EB.isSelected(iEle))
       {
-	
-
-	theNumerator[thisIndex] += theScalibration[thisIndex] * energyRecHitSCEle2 -> at(iRecHit) * FdiEta * thisIC / thisE * pIn / thisE * EoPweight;
-	theDenominator[thisIndex] += theScalibration[thisIndex] * energyRecHitSCEle2 -> at(iRecHit) * FdiEta * thisIC / thisE * EoPweight;
-
+	ERecHit=EB.GetERecHit(iEle);
+	fracRecHit=EB.GetfracRecHit(iEle);
+	XRecHit=EB.GetXRecHit(iEle);
+	YRecHit=EB.GetYRecHit(iEle);
+	//ZRecHit=EB.GetZRecHit(iEle);
+	recoFlagRecHit=EB.GetrecoFlagRecHit(iEle);
 	E=EB.GetICEnergy(iEle);
 	p=EB.GetPcorrected(iEle);
 	eta=EB.GetEtaSC(iEle);
+	weight=EB.GetWeight(E/p,eta);
+	regression=EB.GetRegression(iEle);
+	for(unsigned iRecHit=0; iRecHit<ERecHit->size(); ++iRecHit)
+	{
+	  if(recoFlagRecHit->at(iRecHit) >= 4)
+	    continue;
+	  ieta=XRecHit->at(iRecHit);
+	  iphi=YRecHit->at(iRecHit);
+	  IC=EB.GetIC(iphi,ieta);
+	  index = fromIEtaIPhito1Dindex(ieta,iphi,Nphi,ietamin,iphimin);
+	  numerator1D[index] = ERecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	  denominator1D[index] = ERecHit->at(iRecHit) * regression * IC / E * weight;
+	}
       }
-      if(p!=0)
-	Eop_vs_Eta->Fill(eta,E/p);
-      else
-	cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
     }
-  }
+  }	  
 
-  //loop over bins to normalize to 1 each eta ring
-  cout<<"> Normalization"<<endl;
-  TH1D* Eop_projection;
-  for(int ieta=1 ; ieta<Eop_vs_Eta->GetNbinsX()+1 ; ++ieta)
+  //fill numerator and denominator histos
+  for(int ix=1 ; ix<numerator->GetNbinsX()+1 ; ++ix)
   {
-    Eop_projection=Eop_vs_Eta->ProjectionY("_py",ieta,ieta,"");
-    int Nev = Eop_projection->Integral();
-    if(Nev==0)
-      cout<<"[WARNING]: Nev=0 for eta bin "<<ieta<<endl;
-    cout<<Nev<<endl;
-    for(int iEop=1 ; iEop<Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)
+    for(int iy=1 ; iy<numerator->GetNbinsY()+1 ; ++iy)
     {
-      float Eop = Eop_vs_Eta->GetBinContent(ieta,iEop);
-      Eop_vs_Eta->SetBinContent(ieta,iEop,Eop/Nev);
+      index=from2Dto1Dindex(ix-1,iy-1,Nphi);
+      numerator->SetBinContent(ix,iy,numerator1D[index]);
+      denominator->SetBinContent(ix,iy,denominator1D[index]);
     }
   }
 
-  //set underflow and overflow to 0
-  for(int ieta=1 ; ieta<Eop_vs_Eta->GetNbinsX()+1 ; ++ieta)
-  {
-    Eop_vs_Eta->SetBinContent(ieta,0.,0);//underflow
-    Eop_vs_Eta->SetBinContent(ieta, Eop_vs_Eta->GetNbinsY()+1 ,0);//overflow
-  }
-  
   //save and close
-  Eop_vs_Eta->Write();
+  outFile->cd();
+  numerator->Write();
+  denominator->Write();
   outFile->Close();
   return 0;
 }
