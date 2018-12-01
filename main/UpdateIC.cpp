@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
 	  iphi=YRecHit->at(iRecHit);
 	  IC=EB.GetIC(iphi,ieta);
 	  index = fromIEtaIPhito1Dindex(ieta,iphi,Nphi,ietamin,iphimin);
-	  numerator1D[index] = ERecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	  denominator1D[index] = ERecHit->at(iRecHit) * regression * IC / E * weight;
+	  numerator1D[index] =   ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	  denominator1D[index] = ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
 	}
       }
     }
