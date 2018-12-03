@@ -1,4 +1,5 @@
 #include "calorimeter.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -153,8 +154,6 @@ calorimeter::~calorimeter()
     if(ch_iterator.second)
       (ch_iterator.second)->Delete();
 
-  for(int iphi = 0; iphi < Nphi; ++iphi)
-    delete [] xtal[iphi];
   delete [] xtal;
 
   if(electron_momentum_correction)
@@ -220,15 +219,13 @@ void calorimeter::LoadIC(const std::vector<std::string> &ICcfg)
   iphimax=ICmap->GetXaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
   //cout<<">>> Neta="<<Neta<<" in ["<<ietamin<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin<<","<<iphimax<<"]"<<endl;
 
-  xtal = new crystal*[Nphi];
-  for(int iphi = 0; iphi < Nphi; ++iphi)
-    xtal[iphi] = new crystal[Neta];
-
-  for(int ieta=0;ieta<Neta;++ieta)
-    for(int iphi=0;iphi<Nphi;++iphi)
+  xtal = new crystal[Neta*Nphi];
+  for(int xbin=1; xbin<Nphi+1; ++xbin)
+    for(int ybin=1; ybin<Neta+1; ++ybin)
     {
-      (xtal[iphi][ieta]).IC = ICmap->GetBinContent(iphi+1,ieta+1);
-      (xtal[iphi][ieta]).status = 1.;
+      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi, Neta);
+      xtal[index].IC = ICmap->GetBinContent(xbin,ybin); 
+      xtal[index].status = 1;
     }
 
   inICfile->Close();
@@ -239,15 +236,13 @@ void calorimeter::InitializeIC()
   Neta=ietamax-ietamin+1;
   Nphi=iphimax-iphimin+1;
   cout<<"> Initialize calorimeter with Neta="<<Neta<<" in ["<<ietamin<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin<<","<<iphimax<<"]"<<endl;
-  xtal = new crystal*[Nphi];
-  for(int iphi = 0; iphi < Nphi; ++iphi)
-    xtal[iphi] = new crystal[Neta];
-
-  for(int ieta=0;ieta<Neta;++ieta)
-    for(int iphi=0;iphi<Nphi;++iphi)
+  xtal = new crystal[Neta*Nphi];
+  for(int xbin=1; xbin<Nphi+1; ++xbin)
+    for(int ybin=1; ybin<Neta+1; ++ybin)
     {
-      (xtal[iphi][ieta]).IC = 1.;
-      (xtal[iphi][ieta]).status = 1.;
+      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi, Neta);
+      xtal[index].IC = 1;
+      xtal[index].status = 1;
     }
 }
 
@@ -306,11 +301,15 @@ Float_t calorimeter::GetPhi(const Int_t &i)
   return phiEle[i];
 }
 
-Float_t  calorimeter::GetIC(const Int_t &iphi, const Int_t &ieta)
+Float_t  calorimeter::GetIC(const Int_t &index)
 {
-  int ix = iphi - iphimin;
-  int iy = ieta - ietamin;
-  return (xtal[ix][iy]).IC;
+  return (xtal[index]).IC;
+}
+
+
+Float_t  calorimeter::GetIC(const Int_t &ieta, const Int_t &iphi)
+{
+  return ( xtal[ fromIetaIphito1Dindex(ieta,iphi,Neta,Nphi,ietamin,iphimin) ] ).IC;
 }
 
 
@@ -329,9 +328,9 @@ Float_t calorimeter::GetICEnergy(const Int_t &i)
   {
     if(recoFlagRecHit[i]->at(iRecHit) >= 4)
 	continue;
-    ieta = XRecHit[i]->at(iRecHit) - ietamin;
-    iphi = YRecHit[i]->at(iRecHit) - iphimin;
-
+    ieta = XRecHit[i]->at(iRecHit);
+    iphi = YRecHit[i]->at(iRecHit);
+    /*
     if(ieta>=Neta) cout<<"ieta>=Neta"<<endl;
     if(iphi>=Nphi) cout<<"iphi>=Nphi"<<endl;
     if(ieta<0)     cout<<"ieta<0"<<endl;
@@ -339,7 +338,8 @@ Float_t calorimeter::GetICEnergy(const Int_t &i)
 
     if(ieta>=Neta || iphi>=Nphi || ieta<0 || iphi<0)
       continue;
-    IC = (xtal[iphi][ieta]).IC;
+    */
+    IC = (xtal[fromIetaIphito1Dindex(ieta,iphi,Neta,Nphi,ietamin,iphimin)]).IC;
     E += kRegression * ERecHit[i]->at(iRecHit) * fracRecHit[i]->at(iRecHit) * IC;
   }
       

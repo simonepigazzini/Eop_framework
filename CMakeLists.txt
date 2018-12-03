@@ -35,6 +35,8 @@ add_executable(drawComparisonPlots main/drawComparisonPlots.cpp ${sources} ${hea
 target_link_libraries(drawComparisonPlots ${ROOT_LIBRARIES})
 add_executable(UpdateIC main/UpdateIC.cpp ${sources} ${headers})
 target_link_libraries(UpdateIC ${ROOT_LIBRARIES})
+add_executable(validate_indexing main/validate_indexing.cpp ${sources} ${headers})
+target_link_libraries(validate_indexing ${ROOT_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
@@ -42,6 +44,7 @@ target_link_libraries(UpdateIC ${ROOT_LIBRARIES})
 install(TARGETS BuildEopEta DESTINATION bin)
 install(TARGETS drawComparisonPlots DESTINATION bin)
 install(TARGETS UpdateIC DESTINATION bin)
+install(TARGETS validate_indexing DESTINATION bin)
 
 # If necessary, use the RELATIVE flag, otherwise each source file may be listed 
 # with full pathname. RELATIVE may makes it easier to extract an executable name

@@ -1,8 +1,8 @@
+#include "utils.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
 #include "calorimeter.h"
 #include "crystal.h"
-#include "utils.h"
 
 #include <iostream>
 #include <string>
@@ -78,6 +78,8 @@ int main(int argc, char* argv[])
 
   for(Long64_t ientry=0 ; ientry<Nentries ; ++ientry)
   {
+    if( ientry%1000==0 )
+      std::cout << "Processing entry "<< ientry << "\r" << std::flush;
     EB.GetEntry(ientry);
     for(iEle=0;iEle<2;++iEle)
     {
@@ -101,24 +103,28 @@ int main(int argc, char* argv[])
 	  ieta=XRecHit->at(iRecHit);
 	  iphi=YRecHit->at(iRecHit);
 	  IC=EB.GetIC(iphi,ieta);
-	  index = fromIEtaIPhito1Dindex(ieta,iphi,Nphi,ietamin,iphimin);
-	  numerator1D[index] =   ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	  denominator1D[index] = ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	  index = fromIetaIphito1Dindex(ieta, iphi, Neta, Nphi, ietamin, iphimin);
+	  if(E>15. && p>15.)
+	  {
+	    numerator1D[index] =   ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	    denominator1D[index] = ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	  }
+	  else
+	    cout<<"[WARNING]: E="<<E<<" and p="<<p<<" for event "<<ientry<<endl;
 	}
       }
     }
   }	  
 
   //fill numerator and denominator histos
-  for(int ix=1 ; ix<numerator->GetNbinsX()+1 ; ++ix)
-  {
-    for(int iy=1 ; iy<numerator->GetNbinsY()+1 ; ++iy)
+  for(int xbin=1; xbin<numerator->GetNbinsX()+1; ++xbin)
+    for(int ybin=1; ybin<numerator->GetNbinsY()+1; ++ybin)
     {
-      index=from2Dto1Dindex(ix-1,iy-1,Nphi);
-      numerator->SetBinContent(ix,iy,numerator1D[index]);
-      denominator->SetBinContent(ix,iy,denominator1D[index]);
+      index = fromTH2indexto1Dindex(xbin, ybin, Neta, Nphi);
+      numerator->SetBinContent(xbin,ybin,numerator1D[index]);
+      denominator->SetBinContent(xbin,ybin,denominator1D[index]);
     }
-  }
+
 
   //save and close
   outFile->cd();

@@ -36,7 +36,8 @@ class calorimeter
   Float_t  GetEtaSC(const Int_t &i);
   Float_t  GetPhi(const Int_t &i);
   Float_t  GetICEnergy(const Int_t &i);
-  Float_t  GetIC(const Int_t &iphi, const Int_t &ieta);
+  Float_t  GetIC(const Int_t &index);
+  Float_t  GetIC(const Int_t &ieta, const Int_t &iphi);
   Float_t  GetWeight(const Float_t &Eop,const Float_t &Eta);
   Float_t  GetRegression(const Int_t &i) {return energySCEle[i]/rawEnergySCEle[i];}
   void     GetEtaboundaries(Float_t &ietamin_, Float_t &ietamax_) {ietamin_=ietamin; ietamax_=ietamax;}
@@ -59,7 +60,7 @@ class calorimeter
   void BranchExtraCalib(TChain* chain);
 
   TTreeFormula *selection;
-  struct crystal **xtal;
+  struct crystal *xtal;
   int Neta,Nphi,ietamin,ietamax,iphimin,iphimax;
   std::map<std::string,TChain*> ch;
   TChain* chain;
