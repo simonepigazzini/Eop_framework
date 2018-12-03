@@ -60,9 +60,17 @@ int main(int argc, char* argv[])
   TFile *outFile = new TFile(("IC_"+label+".root").Data(),"RECREATE");
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
   TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
+  TH2D* temporaryICpull = new TH2D(("temporaryICpull_"+label).Data(),("temporaryICpull_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
 
   double *numerator1D = new double[Neta*Nphi];
   double *denominator1D = new double[Neta*Nphi]; 
+  
+  //initialize numerator and denominator
+  for( int index=0; index<Neta*Nphi; ++index)
+  {
+    numerator1D[index]=0;
+    denominator1D[index]=0;
+  }
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
@@ -78,7 +86,7 @@ int main(int argc, char* argv[])
 
   for(Long64_t ientry=0 ; ientry<Nentries ; ++ientry)
   {
-    if( ientry%1000==0 )
+    if( ientry%10000==0 )
       std::cout << "Processing entry "<< ientry << "\r" << std::flush;
     EB.GetEntry(ientry);
     for(iEle=0;iEle<2;++iEle)
@@ -94,23 +102,28 @@ int main(int argc, char* argv[])
 	E=EB.GetICEnergy(iEle);
 	p=EB.GetPcorrected(iEle);
 	eta=EB.GetEtaSC(iEle);
-	weight=EB.GetWeight(E/p,eta);
+	weight=EB.GetWeight(eta,E/p);
 	regression=EB.GetRegression(iEle);
+	//cout<<"E="<<E<<"\tp="<<p<<"\teta="<<eta<<"\tweight="<<weight<<"\tregression="<<regression<<endl;
 	for(unsigned iRecHit=0; iRecHit<ERecHit->size(); ++iRecHit)
 	{
 	  if(recoFlagRecHit->at(iRecHit) >= 4)
 	    continue;
 	  ieta=XRecHit->at(iRecHit);
 	  iphi=YRecHit->at(iRecHit);
-	  IC=EB.GetIC(iphi,ieta);
 	  index = fromIetaIphito1Dindex(ieta, iphi, Neta, Nphi, ietamin, iphimin);
+	  IC=EB.GetIC(index);
+	  //cout<<"ieta="<<ieta<<"\tiphi="<<iphi<<"\tindex="<<index<<"\tIC="<<IC<<endl;
+	  //cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<endl;
 	  if(E>15. && p>15.)
 	  {
-	    numerator1D[index] =   ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	    denominator1D[index] = ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	    numerator1D[index]   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	    denominator1D[index] += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	    //cout<<"numerator="<<numerator1D[index]<<"\tdenominator="<<denominator1D[index]<<endl;
 	  }
-	  else
-	    cout<<"[WARNING]: E="<<E<<" and p="<<p<<" for event "<<ientry<<endl;
+	  //getchar();
+	  //else
+	  //  cout<<"[WARNING]: E="<<E<<" and p="<<p<<" for event "<<ientry<<endl;
 	}
       }
     }
@@ -120,9 +133,11 @@ int main(int argc, char* argv[])
   for(int xbin=1; xbin<numerator->GetNbinsX()+1; ++xbin)
     for(int ybin=1; ybin<numerator->GetNbinsY()+1; ++ybin)
     {
-      index = fromTH2indexto1Dindex(xbin, ybin, Neta, Nphi);
+      index = fromTH2indexto1Dindex(xbin, ybin, Nphi, Neta);
       numerator->SetBinContent(xbin,ybin,numerator1D[index]);
       denominator->SetBinContent(xbin,ybin,denominator1D[index]);
+      if (denominator1D[index]!=0)
+	temporaryICpull->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
     }
 
 
@@ -130,6 +145,7 @@ int main(int argc, char* argv[])
   outFile->cd();
   numerator->Write();
   denominator->Write();
+  temporaryICpull->Write();
   outFile->Close();
   return 0;
 }
