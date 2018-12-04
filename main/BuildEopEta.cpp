@@ -59,6 +59,8 @@ int main(int argc, char* argv[])
   int iEle;
   for(Long64_t ientry=0 ; ientry<Nentries ; ++ientry)
   {
+    if( ientry%10000==0 )
+      std::cout << "Processing entry "<< ientry << "\r" << std::flush;
     EB.GetEntry(ientry);
     for(iEle=0;iEle<2;++iEle)
     {
@@ -84,7 +86,7 @@ int main(int argc, char* argv[])
     int Nev = Eop_projection->Integral();
     if(Nev==0)
       cout<<"[WARNING]: Nev=0 for eta bin "<<ieta<<endl;
-    cout<<Nev<<endl;
+    //cout<<Nev<<endl;
     for(int iEop=1 ; iEop<Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)
     {
       float Eop = Eop_vs_Eta->GetBinContent(ieta,iEop);

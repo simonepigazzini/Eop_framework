@@ -58,9 +58,9 @@ int main(int argc, char* argv[])
   Nphi=EB.GetNphi();
 
   TFile *outFile = new TFile(("IC_"+label+".root").Data(),"RECREATE");
-  TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
-  TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
-  TH2D* temporaryICpull = new TH2D(("temporaryICpull_"+label).Data(),("temporaryICpull_"+label).Data(), Neta, ietamin, ietamax+1, Nphi, iphimin, iphimax+1);
+  TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
+  TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
+  TH2D* temporaryICpull = new TH2D(("temporaryICpull_"+label).Data(),("temporaryICpull_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
 
   double *numerator1D = new double[Neta*Nphi];
   double *denominator1D = new double[Neta*Nphi]; 
