@@ -1,3 +1,5 @@
+//NOTE: this class is taken from https://github.com/simonepigazzini/CfgManager.git whose main editor is Simone Pigazzini
+
 #include "CfgManager.h"
 #include "CfgManagerT.h"
 

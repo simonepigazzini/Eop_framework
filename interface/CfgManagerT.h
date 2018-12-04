@@ -1,3 +1,5 @@
+//NOTE: this class is taken from https://github.com/simonepigazzini/CfgManager.git whose main editor is Simone Pigazzini
+
 #ifndef __CFG_MANAGER_T__
 #define __CFG_MANAGER_T__
 
