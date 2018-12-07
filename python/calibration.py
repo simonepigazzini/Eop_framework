@@ -18,9 +18,9 @@ print("-------------------------------------------------------------------------
 #parameters
 ntupleName = "Run2018"
 current_dir = os.getcwd();
-#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/2018/"#parent folder containing the ntuples for the monitoring
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/Cal_Oct2017_cand_v7/" #"/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/2018/"#parent folder containing the ntuples for the monitoring
 #tag_list = ["EcalPedestals_10May2018_collisions_blue_laser_Rereco","101X_dataRun2_Prompt_v9","101X_dataRun2_Prompt_v10","101X_dataRun2_Prompt_v11"]#tag for the monitoring
-ntuple_dir = "/home/fabio/Eop_framework/data/" #parent folder containing the ntuples for the monitoring
+#ntuple_dir = "/home/fabio/Eop_framework/data/" #parent folder containing the ntuples for the monitoring
 tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
 tasklist = ["BuildEopEta","UpdateIC"]
@@ -129,7 +129,16 @@ for iLoop in range(0,options.Nloop):
                     out=line.split()
                     job_Nb[categories[iFile]] = out[1].replace("<","").replace(">","")
                     print(">>Job number = "+job_Nb[categories[iFile]])
-      
+
+    #generate condor submitfile
+    condorsub = open( job_folder+"/submit_BuilEopEta_loop"+str(iLoop)+".sub","w")
+    condorsub.write("executable            = "+job_folder+"/job_loop_"+str(iLoop)+"_file_$(ProcId)_BuilEopEta/job_$(ProcId).sh\n")
+    condorsub.write("output                = output/hello.$(ClusterId).$(ProcId).out\n")
+    condorsub.write("error                 = error/hello.$(ClusterId).$(ProcId).err\n")
+    condorsub.write("log                   = log/hello.$(ClusterId).log\n")
+    condorsub.write("queue "+str(len(selected_filelist))+"\n")
+    condorsub.close()
+    
 if options.generateOnly:
     sys.exit()
 
