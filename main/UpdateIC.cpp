@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
   
   //define the calorimeter object to easily access to the ntuples data
   calorimeter EB(config);
-  
+
   //eta, phi boundaries are taken by the calorimeter constructor from configfile 
   float ietamin, ietamax, iphimin, iphimax;
   int Neta, Nphi;
@@ -57,10 +57,13 @@ int main(int argc, char* argv[])
   Neta=EB.GetNeta();
   Nphi=EB.GetNphi();
 
-  TFile *outFile = new TFile(("IC_"+label+".root").Data(),"RECREATE");
+  string outfilename = "IC_"+string(label)+".root";
+  if(config.OptExist("Input.inputIC"))
+    outfilename = config.GetOpt<string> ("Output.UpdateIC_output");
+  TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
   TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
-  TH2D* temporaryICpull = new TH2D(("temporaryICpull_"+label).Data(),("temporaryICpull_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
+  TH2D* temporaryIC = new TH2D(("temporaryIC_"+label).Data(),("temporaryIC_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
 
   double *numerator1D = new double[Neta*Nphi];
   double *denominator1D = new double[Neta*Nphi]; 
@@ -137,7 +140,7 @@ int main(int argc, char* argv[])
       numerator->SetBinContent(xbin,ybin,numerator1D[index]);
       denominator->SetBinContent(xbin,ybin,denominator1D[index]);
       if (denominator1D[index]!=0)
-	temporaryICpull->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
+	temporaryIC->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
     }
 
 
@@ -145,7 +148,7 @@ int main(int argc, char* argv[])
   outFile->cd();
   numerator->Write();
   denominator->Write();
-  temporaryICpull->Write();
+  temporaryIC->Write();
   outFile->Close();
   return 0;
 }

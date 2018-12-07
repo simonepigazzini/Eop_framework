@@ -49,7 +49,10 @@ int main(int argc, char* argv[])
   calorimeter EB(config);
 
   //define the output histo
-  TFile *outFile = new TFile(("EopEta_"+label+".root").Data(),"RECREATE");
+  string outfilename = "EopEta_"+string(label)+".root";
+  if(config.OptExist("Input.inputIC"))
+    outfilename = config.GetOpt<string> ("Output.BuildEopEta_output");
+  TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
   TH2F* Eop_vs_Eta = new TH2F(("EopEta_"+label).Data(),("EopEta_"+label).Data(), 171, -1.4775, +1.4775, 100, 0.2, 1.9);
 
   //loop over entries to fill the histo  
