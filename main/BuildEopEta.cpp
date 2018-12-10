@@ -50,10 +50,14 @@ int main(int argc, char* argv[])
 
   //define the output histo
   string outfilename = "EopEta_"+string(label)+".root";
-  if(config.OptExist("Input.inputIC"))
+  if(config.OptExist("Output.BuildEopEta_output"))
     outfilename = config.GetOpt<string> ("Output.BuildEopEta_output");
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
-  TH2F* Eop_vs_Eta = new TH2F(("EopEta_"+label).Data(),("EopEta_"+label).Data(), 171, -1.4775, +1.4775, 100, 0.2, 1.9);
+  float Eopweightrange = 0.8;
+  if(config.OptExist("Input.Eopweightrange"))
+    Eopweightrange = config.GetOpt<float> ("Input.Eopweightrange");
+  cout<<"> Set Eop range from "<<1.-Eopweightrange<<" to "<<1.+Eopweightrange<<endl;
+  TH2F* Eop_vs_Eta = new TH2F(("EopEta_"+label).Data(),("EopEta_"+label).Data(), 171, -1.4775, +1.4775, 100, 1.-Eopweightrange, 1.+Eopweightrange);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();

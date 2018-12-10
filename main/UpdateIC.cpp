@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
   Nphi=EB.GetNphi();
 
   string outfilename = "IC_"+string(label)+".root";
-  if(config.OptExist("Input.inputIC"))
+  if(config.OptExist("Output.UpdateIC_output"))
     outfilename = config.GetOpt<string> ("Output.UpdateIC_output");
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
