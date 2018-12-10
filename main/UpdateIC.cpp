@@ -63,6 +63,7 @@ int main(int argc, char* argv[])
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
   TH2D* numerator = new TH2D(("numerator_"+label).Data(),("numerator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
   TH2D* denominator = new TH2D(("denominator_"+label).Data(),("denominator_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
+  TH2D* ICpull = new TH2D(("ICpull_"+label).Data(),("ICpull_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
   TH2D* temporaryIC = new TH2D(("temporaryIC_"+label).Data(),("temporaryIC_"+label).Data(), Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
 
   double *numerator1D = new double[Neta*Nphi];
@@ -140,7 +141,10 @@ int main(int argc, char* argv[])
       numerator->SetBinContent(xbin,ybin,numerator1D[index]);
       denominator->SetBinContent(xbin,ybin,denominator1D[index]);
       if (denominator1D[index]!=0)
-	temporaryIC->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
+      {
+	ICpull->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
+	temporaryIC->SetBinContent(xbin,ybin, EB.GetIC(index) * numerator1D[index]/denominator1D[index]);	
+      }
     }
 
 
@@ -148,6 +152,7 @@ int main(int argc, char* argv[])
   outFile->cd();
   numerator->Write();
   denominator->Write();
+  ICpull->Write();
   temporaryIC->Write();
   outFile->Close();
   return 0;
