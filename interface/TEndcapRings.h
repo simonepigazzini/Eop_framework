@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <math.h>
 #include <vector>
+#include <string>
 
 class TEndcapRings
 {
@@ -35,7 +36,7 @@ private:
 public:
 
 	// ctor
-	TEndcapRings();
+	TEndcapRings(std::string EEringsFile);
 
 	// dtor
 	~TEndcapRings();
