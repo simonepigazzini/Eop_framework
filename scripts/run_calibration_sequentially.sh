@@ -7,12 +7,22 @@
 #   + 1 to run the first BuilEopEta
 #   + 1 to run the first UpdateIC
 #   + 1 for all the other operations after the first loop
-workdir=/home/fabio/Eop_framework/
-Nloop=`expr $1 - 1`
+
+#workdir=/home/fabio/Eop_framework/
+workdir=/afs/cern.ch/user/f/fmonti/work/Eop_framework/
+rundir=/afs/cern.ch/user/f/fmonti/work/Eop_framework/test/test3/
+CMSSWdir=/afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/
+#Nloop=`expr $1 - 1`
+Nloop=14
 
 echo ---------------------------
 echo START
 echo ---------------------------
+
+cd $CMSSWdir
+eval `scram runtime -sh`
+cd $rundir
+echo 'running in '$rundir
 
 #first loop
 echo 

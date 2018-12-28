@@ -117,15 +117,18 @@ int main(int argc, char* argv[])
 	  iphi=YRecHit->at(iRecHit);
 	  index = fromIetaIphito1Dindex(ieta, iphi, Neta, Nphi, ietamin, iphimin);
 	  IC=EB.GetIC(index);
+	  //cout<<"entry="<<ientry<<endl;
 	  //cout<<"ieta="<<ieta<<"\tiphi="<<iphi<<"\tindex="<<index<<"\tIC="<<IC<<endl;
 	  //cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<endl;
-	  if(E>15. && p>15.)
+	  //cout<<"regression="<<regression<<"\tE="<<E<<"\tp="<<p<<"\tweight="<<weight<<endl;
+	  //if(E>15. && p>15.)
 	  {
 	    numerator1D[index]   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
 	    denominator1D[index] += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
 	    //cout<<"numerator="<<numerator1D[index]<<"\tdenominator="<<denominator1D[index]<<endl;
+	    //if(ieta>70) getchar();
 	  }
-	  //getchar();
+
 	  //else
 	  //  cout<<"[WARNING]: E="<<E<<" and p="<<p<<" for event "<<ientry<<endl;
 	}
