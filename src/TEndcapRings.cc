@@ -1,11 +1,11 @@
-#include "../interface/TEndcapRings.h"
+#include "TEndcapRings.h"
 
 
 
 //-----
 // ctor
 
-TEndcapRings::TEndcapRings()
+TEndcapRings::TEndcapRings(std::string EEringsFile)
 {
 	// initialization
 	for(int ix = 1; ix <= 100; ++ix)
@@ -14,8 +14,8 @@ TEndcapRings::TEndcapRings()
 				iEndcapRing[ix][iy][iz] = -1;
 
 	FILE *fRing;
-	fRing = fopen("/afs/cern.ch/user/v/vciriolo/work/public/eerings.dat", "r");
-	std::cout << "Inizializing endcap geometry from: eerings.dat" << std::endl;
+	fRing = fopen(EEringsFile.c_str(), "r");
+	std::cout << "Inizializing endcap geometry from: " <<EEringsFile<< std::endl;
 	int ix, iy, iz, ir;
 	while(fscanf(fRing, "(%d,%d,%d) %d \n", &ix, &iy, &iz, &ir) != EOF ) {
 		if( iz < 0 ) iz = 0;

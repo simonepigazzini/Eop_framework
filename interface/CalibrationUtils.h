@@ -3,7 +3,7 @@
 
 #include "TGraphErrors.h"
 #include <TH2F.h>
-#include "../interface/TEndcapRings.h"
+#include "TEndcapRings.h"
 
 
 void DrawCorr_EE(TH2F* h_scale_EEM, TH2F* h_scale_EEP, TH2F* hcmap_EEM, TH2F* hcmap_EEP, const std::vector< std::pair<int, int> > & TT_centre_EEM, const  std::vector< std::pair<int, int> > & TT_centre_EEP, std::vector<std::vector<TGraphErrors*> > & correctionMomentum, TEndcapRings *eRings, bool skip = true, int nEtaBinsEE = 5, float etaMin = 1.4, float etaMax = 2.5);
