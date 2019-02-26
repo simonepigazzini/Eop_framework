@@ -38,6 +38,9 @@ class calorimeter
   Float_t  GetICEnergy(const Int_t &i);
   Float_t  GetIC(const Int_t &index);
   Float_t  GetIC(const Int_t &ieta, const Int_t &iphi);
+  void     GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i);
+  int      GetietaSeed(const Int_t &i);
+  int      GetiphiSeed(const Int_t &i);
   Float_t  GetWeight(const Float_t &Eop,const Float_t &Eta);
   Float_t  GetRegression(const Int_t &i) {return energySCEle[i]/rawEnergySCEle[i];}
   void     GetEtaboundaries(Float_t &ietamin_, Float_t &ietamax_) {ietamin_=ietamin; ietamax_=ietamax;}
@@ -74,6 +77,8 @@ class calorimeter
   Int_t           lumiBlock;
   Int_t           eventNumber;
   Short_t         chargeEle[3];
+  Short_t         xSeed[3];
+  Short_t         ySeed[3];
   Float_t         etaEle[3];
   Float_t         phiEle[3];
   Float_t         rawEnergySCEle[3];

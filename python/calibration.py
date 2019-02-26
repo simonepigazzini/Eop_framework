@@ -18,12 +18,13 @@ print("-------------------------------------------------------------------------
 #parameters
 ntupleName = "Run2018"
 current_dir = os.getcwd();
-#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/Cal_Oct2017_cand_v7/" #"/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/2018/"#parent folder containing the ntuples for the monitoring
-#tag_list = ["EcalPedestals_10May2018_collisions_blue_laser_Rereco","101X_dataRun2_Prompt_v9","101X_dataRun2_Prompt_v10","101X_dataRun2_Prompt_v11"]#tag for the monitoring
-ntuple_dir = "/home/fabio/Eop_framework/data/" #parent folder containing the ntuples for the monitoring
-tag_list = ["Run2017C"] #tag for the monitoring
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
+tag_list = ["RUN2017B","RUN2017C","RUN2017D","RUN2017E","RUN2017F"]#tag for the monitoring
+#ntuple_dir = "/home/fabio/Eop_framework/data/" #parent folder containing the ntuples for the monitoring
+#tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
 tasklist = ["BuildEopEta","UpdateIC"]
+splitstat = ["odd","even"]
 
 #parse arguments
 parser = OptionParser()
@@ -36,7 +37,7 @@ parser.add_option("-l", "--label",     action="store", type="string", dest="labe
 parser.add_option("-N", "--Nloop",     action="store", type="int",    dest="Nloop",        default=15,         help="number of loop")
 (options, args) = parser.parse_args()
 
-#eventually get new files for the monitoring
+#get ntuples for the calibration
 selected_filelist = []
 extracalibtree_filelist = []
 for root, dirs, files in os.walk(ntuple_dir):
@@ -81,54 +82,58 @@ for iLoop in range(0,options.Nloop):
             if(options.verbosity>=1):
                 print("Generating job for "+task)
             
-            jobdir=job_folder+"/job_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+task
+            jobdir=job_folder+"/job_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+task+"/"
             os.system("mkdir "+jobdir)
-
-            ##### creates config file #######
-            BUILDEOPETA_OUTPUT= options.outdir+"/EopEta_"+str(iLoop)+".root"
-            UPDATEIC_OUTPUT= options.outdir+"/IC_"+str(iLoop)+".root"
-            if task=="BuildEopEta":
-                BUILDEOPETA_INPUT=" EopEta_"+str(iLoop-1)+" "+options.outdir+"/EopEta_"+str(iLoop-1)+".root"
-                UPDATEIC_INPUT=" IC_eta_phi "+options.outdir+"/IC_"+str(iLoop-1)+".root"                    
-            if task=="UpdateIC":
-                BUILDEOPETA_INPUT=" EopEta_"+str(iLoop)+" "+options.outdir+"/EopEta_"+str(iLoop)+".root"
-                UPDATEIC_INPUT=" IC_eta_phi "+options.outdir+"/IC_"+str(iLoop-1)+".root"                    
+            
             with open(options.configFile) as fi:
                 contents = fi.read()
                 replaced_contents = contents.replace("SELECTED_INPUTFILE", selected_filename).replace("EXTRACALIBTREE_INPUTFILE", extracalibtree_filename)
-                replaced_contents=replaced_contents.replace("BUILDEOPETA_OUTPUT",BUILDEOPETA_OUTPUT)
-                replaced_contents=replaced_contents.replace("UPDATEIC_OUTPUT",UPDATEIC_OUTPUT)
-                if iLoop==0 :
-                    replaced_contents=replaced_contents.replace("  inputIC UPDATEIC_INPUT\n","")
-                    if task=="BuildEopEta":
-                        replaced_contents=replaced_contents.replace("  Eopweight TH2F BUILDEOPETA_INPUT\n","")
-                    else:
-                        replaced_contents=replaced_contents.replace("BUILDEOPETA_INPUT",BUILDEOPETA_INPUT)
-                else:
-                    replaced_contents=replaced_contents.replace("BUILDEOPETA_INPUT",BUILDEOPETA_INPUT)
-                    replaced_contents=replaced_contents.replace("UPDATEIC_INPUT",UPDATEIC_INPUT)
-            with open(jobdir+"/config.cfg", "w") as fo:
+            cfgfilename=jobdir+"/config.cfg"
+            with open(cfgfilename, "w") as fo:
                 fo.write(replaced_contents)
 
-            ##### create script #######
-            outScript = open( jobdir+"/job_"+str(iFile)+".sh","w")
-            outScript.write("#!/bin/bash\n")
-            #outScript.write('source setup.sh\n')
-            outScript.write("echo $PWD\n");
-            outScript.write(options.exedir+"/"+task+"\n") 
-            outScript.write("echo finish\n") 
-            outScript.close();
-            os.system("chmod 777 "+jobdir+"/job_"+str(iFile)+".sh")
-            submit_command = "bsub -q 8nh "+jobdir+"/job_"+str(iFile)+".sh"
-            if(options.verbosity>=1):
-                print(">>SUBMIT COMMAND: "+submit_command)
-            if not options.generateOnly:
-                command = submit_command.split()
-                p = subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                for line in iter(p.stdout.readline, b''):
-                    out=line.split()
-                    job_Nb[categories[iFile]] = out[1].replace("<","").replace(">","")
-                    print(">>Job number = "+job_Nb[categories[iFile]])
+            for split in splitstat:
+                ##### creates executable options #######
+                BUILDEOPETA_OUTPUT= options.outdir+"/EopEta_loop"+str(iLoop)+"_"+split+".root"
+                UPDATEIC_OUTPUT= options.outdir+"/IC_loop"+str(iLoop)+"_"+split+".root"
+                BUILDEOPETA_INPUT_OPTION=""
+                UPDATEIC_INPUT_OPTION=""
+                if iLoop==0:
+                    if task=="BuildEopEta":
+                        BUILDEOPETA_INPUT_OPTION=""
+                        UPDATEIC_INPUT_OPTION=""
+                    if task=="UpdateIC":
+                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+options.outdir+"/EopEta_loop"+str(iLoop)+".root"
+                        UPDATEIC_INPUT_OPTION=""
+                else:
+                    if task=="BuildEopEta":
+                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+options.outdir+"/EopEta_loop"+str(iLoop-1)+".root"
+                        UPDATEIC_INPUT_OPTION="--inputIC IC "+options.outdir+"/IC_loop"+str(iLoop-1)+".root"                    
+                    if task=="UpdateIC":
+                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+options.outdir+"/EopEta_loop"+str(iLoop)+".root"
+                        UPDATEIC_INPUT_OPTION="--inputIC IC "+options.outdir+"/IC_loop"+str(iLoop-1)+".root"                    
+
+                ##### creates script #######                                                                                                     
+                outScript = open( jobdir+"/job_file"+str(iFile)+"_"+split+".sh","w")
+                outScript.write("#!/bin/bash\n")
+                #outScript.write('source setup.sh\n')
+                outScript.write("echo $PWD\n");
+                outScript.write(
+                    options.exedir+"/"+task+
+                    " --cfg "+cfgfilename+
+                    " "+UPDATEIC_INPUT_OPTION+
+                    " "+BUILDEOPETA_INPUT_OPTION+
+                    " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
+                    " --UpdateIC_output "+UPDATEIC_OUTPUT+
+                    " --"+split+"\n")
+                outScript.write("echo finish\n") 
+                outScript.close();
+                os.system("chmod 777 "+jobdir+"/job_"+str(iFile)+".sh")
+
+                submit_command = ""
+                if(options.verbosity>=1):
+                    print(">>SUBMIT COMMAND: "+submit_command)
+sys.exit()
 
     #generate condor submitfile
     condorsub = open( job_folder+"/submit_BuilEopEta_loop"+str(iLoop)+".sub","w")
@@ -140,7 +145,7 @@ for iLoop in range(0,options.Nloop):
     condorsub.close()
     
 if options.generateOnly:
-    sys.exit()
+
 
 print
 print

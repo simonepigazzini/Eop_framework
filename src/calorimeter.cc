@@ -18,6 +18,8 @@ void calorimeter::BranchSelected(TChain* chain)
   chain->SetBranchAddress("esEnergySCEle",      esEnergySCEle);
   chain->SetBranchAddress("pAtVtxGsfEle",       pAtVtxGsfEle);
   chain->SetBranchAddress("fbremEle",           fbremEle);
+  chain->SetBranchAddress("xSeedSC",            xSeed);
+  chain->SetBranchAddress("ySeedSC",            ySeed);
   //chain->SetBranchAddress("energyMCEle",      energyMCEle);
   //chain->SetBranchAddress("etaMCEle",         etaMCEle);
   //chain->SetBranchAddress("phiMCEle",         phiMCEle);
@@ -70,7 +72,8 @@ void calorimeter::BranchExtraCalib(TChain* chain)
 calorimeter::calorimeter(CfgManager conf):
   electron_momentum_correction(0),
   positron_momentum_correction(0),
-  weight(0)
+  weight(0),
+  xtal(0)
 {
   //-------------------------------------
   //initialize chain and branch tree
@@ -205,6 +208,8 @@ void calorimeter::LoadEopWeight(const vector<string> &weightcfg)
 
 void calorimeter::LoadIC(const std::vector<std::string> &ICcfg)
 {
+  if(xtal)
+    delete[] xtal;
   string objkey   = ICcfg[0];
   string filename = ICcfg[1];
   cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
@@ -307,11 +312,26 @@ Float_t  calorimeter::GetIC(const Int_t &index)
 }
 
 
-Float_t  calorimeter::GetIC(const Int_t &ieta, const Int_t &iphi)
+Float_t calorimeter::GetIC(const Int_t &ieta, const Int_t &iphi)
 {
   return ( xtal[ fromIetaIphito1Dindex(ieta,iphi,Neta,Nphi,ietamin,iphimin) ] ).IC;
 }
 
+void calorimeter::GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i)
+{
+  ieta=xSeed[i];
+  iphi=ySeed[i];
+}
+
+int calorimeter::GetietaSeed(const Int_t &i)
+{
+  return xSeed[i];
+}
+
+int calorimeter::GetiphiSeed(const Int_t &i)
+{
+  return ySeed[i];
+}
 
 Float_t calorimeter::GetICEnergy(const Int_t &i)
 {
