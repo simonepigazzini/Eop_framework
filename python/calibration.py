@@ -18,8 +18,8 @@ print("-------------------------------------------------------------------------
 #parameters
 ntupleName = "Run2017"
 current_dir = os.getcwd();
-ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
-#ntuple_dir="/home/fabio/work/Eop_framework/data/"
+#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
+ntuple_dir="/home/fabio/work/Eop_framework/data/"
 tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
@@ -140,8 +140,8 @@ for iLoop in range(0,options.Nloop):
                     " --cfg "+cfgfilename+
                     " "+UPDATEIC_INPUT_OPTION+
                     " "+BUILDEOPETA_INPUT_OPTION+
-                    " --BuildEopEta_EB_output "+BUILDEOPETA_OUTPUT+
-                    " --ComputeIC_EB_output "+UPDATEIC_OUTPUT+
+                    " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
+                    " --ComputeIC_output "+UPDATEIC_OUTPUT+
                     " --"+split+"\n")
                 outScript.write("echo finish\n") 
                 outScript.close();

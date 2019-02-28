@@ -60,7 +60,10 @@ int main(int argc, char* argv[])
       weightcfg.push_back(argv[iarg+3]);
     }
     if(string(argv[iarg])=="--BuildEopEta_output")
+    {
+      cout<<"I AM HERE"<<endl;
       outfilename=argv[iarg+1];
+    }
     if(string(argv[iarg])=="--odd")
       splitstat="odd";
     if(string(argv[iarg])=="--even")

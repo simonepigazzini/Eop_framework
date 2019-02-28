@@ -26,13 +26,14 @@ int main(int argc, char* argv[])
   {
     if(string(argv[iarg])=="--oldIC")
     {
-      oldFileName=argv[iarg+1];
-      oldObjName=argv[iarg+2];
+      oldObjName=argv[iarg+1];
+      oldFileName=argv[iarg+2];
+
     }
     if(string(argv[iarg])=="--newIC")
     {
-      newFileName=argv[iarg+1];
-      newObjName=argv[iarg+2];
+      newObjName=argv[iarg+1];
+      newFileName=argv[iarg+2];
     }
   }
 
@@ -49,6 +50,7 @@ int main(int argc, char* argv[])
   TH2D* oldIC=0;
   if(oldFileName!="")
   {
+    cout<<">> Reading old ICs from "<<oldFileName.Data()<<"/"<<oldObjName.Data()<<endl;
     TFile oldFile(oldFileName.Data(),"READ");
     oldIC = (TH2D*) oldFile.Get(oldObjName.Data());
     oldIC->SetDirectory(0);
@@ -56,6 +58,7 @@ int main(int argc, char* argv[])
   }
 
   //Load new (incomplete) ICs
+  cout<<">> Reading new numerator and denominator from "<<newFileName.Data()<<endl;
   TFile newFile(newFileName.Data(),"UPDATE");
   TH2D* numerator = (TH2D*)newFile.Get("numerator");
   TH2D* denominator = (TH2D*)newFile.Get("denominator");
@@ -65,7 +68,6 @@ int main(int argc, char* argv[])
   //Reset objects that are in general wrongly filled by hadd
   ICpull->Reset();
   temporaryIC->Reset();
-
   //Create and fill ICpull and newIC
   TH2D* newIC = (TH2D*)temporaryIC->Clone();
   newIC->SetName(newObjName.Data());
@@ -83,10 +85,11 @@ int main(int argc, char* argv[])
   }
 
   //Overwrite the newIC file
+  cout<<">> Writing new ICs to "<<newFileName.Data()<<"/"<<newIC->GetName()<<endl;
   newFile.cd();
   ICpull->Write(ICpull->GetName(),TObject::kOverwrite);
   temporaryIC->Write(temporaryIC->GetName(),TObject::kOverwrite);
-  newIC->Write(newIC->GetName(),TObject::kOverwrite);
+  newIC->Write(newIC->GetName());
   newFile.Close();
 
   if(oldIC)

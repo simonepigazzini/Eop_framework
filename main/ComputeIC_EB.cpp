@@ -29,11 +29,11 @@ using namespace std;
 
 void PrintUsage()
 {
-  cerr << ">>>>> usage:  UpdateIC_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --UpdateIC_output <outputFileName> --odd[or --even]" << endl;
+  cerr << ">>>>> usage:  ComputeIC_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --ComputeIC_output <outputFileName> --odd[or --even]" << endl;
   cerr << "               " <<            " --cfg                MANDATORY"<<endl;
   cerr << "               " <<            " --inputIC            OPTIONAL, can be also provided in the cfg"<<endl;
   cerr << "               " <<            " --Eopweight          OPTIONAL, can be also provided in the cfg" <<endl;
-  cerr << "               " <<            " --UpdateIC_output    OPTIONAL, can be also provided in the cfg" <<endl;
+  cerr << "               " <<            " --ComputeIC_output    OPTIONAL, can be also provided in the cfg" <<endl;
   cerr << "               " <<            " --odd[or --even]     OPTIONAL" <<endl;
 }
 
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
       weightcfg.push_back(argv[iarg+2]);
       weightcfg.push_back(argv[iarg+3]);
     }
-    if(string(argv[iarg])=="--BuildEopEta_output")
+    if(string(argv[iarg])=="--ComputeIC_output")
       outfilename=argv[iarg+1];
     if(string(argv[iarg])=="--odd")
       splitstat="odd";
@@ -97,8 +97,8 @@ int main(int argc, char* argv[])
 
   //define the output 
   if(outfilename == "")
-    if(config.OptExist("Output.UpdateIC_output"))
-      outfilename = config.GetOpt<string> ("Output.UpdateIC_output");
+    if(config.OptExist("Output.ComputeIC_output"))
+      outfilename = config.GetOpt<string> ("Output.ComputeIC_output");
     else
       outfilename = "IC.root";
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
