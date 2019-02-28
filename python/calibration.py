@@ -16,12 +16,12 @@ print(datetime.datetime.now())
 print("----------------------------------------------------------------------------------")
 
 #parameters
-ntupleName = "Run2018"
+ntupleName = "Run2017"
 current_dir = os.getcwd();
-#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
-ntuple_dir="/home/fabio/work/Eop_framework/data/"
-#tag_list = ["RUN2017B","RUN2017C","RUN2017D","RUN2017E","RUN2017F"]#tag for the monitoring
-tag_list = ["Run2017C"] #tag for the monitoring
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
+#ntuple_dir="/home/fabio/work/Eop_framework/data/"
+tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring
+#tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
 tasklist = ["BuildEopEta_EB","ComputeIC_EB"]
 splitstat = ["odd","even"]
@@ -36,6 +36,9 @@ parser.add_option("-c", "--cfg",       action="store", type="str", dest="configF
 parser.add_option("-l", "--label",     action="store", type="str", dest="label",                            help="job label")
 parser.add_option("-N", "--Nloop",     action="store", type="int",    dest="Nloop",        default=15,         help="number of loop")
 (options, args) = parser.parse_args()
+
+#create outdir
+os.system("mkdir -p "+str(options.outdir))
 
 #get ntuples for the calibration
 selected_filelist = []
@@ -68,6 +71,9 @@ else:
 #create folder for the job
 job_parent_folder=current_dir+"/jobs/"+str(options.label)+"/"
 os.system("mkdir -p "+job_parent_folder)
+
+#create the log folder
+os.system("mkdir -p "+job_parent_folder+"/log/")
 
 #create DAGMan file to manage submitting hierarchy
 dagFilename=job_parent_folder+"/submit_manager.dag"
@@ -125,6 +131,9 @@ for iLoop in range(0,options.Nloop):
                 outScript = open(outScriptName,"w")
                 outScript.write("#!/bin/bash\n")
                 #outScript.write('source setup.sh\n')
+                outScript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+                outScript.write('eval `scram runtime -sh`\n');
+                outScript.write("cd -\n");
                 outScript.write("echo $PWD\n");
                 outScript.write(
                     str(options.exedir)+"/"+task+
@@ -142,8 +151,8 @@ for iLoop in range(0,options.Nloop):
         condorsubFilename=job_parent_folder+"/submit_"+task+"_loop_"+str(iLoop)+".sub"
         condorsub = open( condorsubFilename,"w")
         condorsub.write("executable            = $(scriptname)\n")
-        condorsub.write("output                = output/out.$(scriptname).$(ClusterId).out\n")
-        condorsub.write("error                 = error/err.$(scriptname).$(ClusterId).err\n")
+        condorsub.write("output                = $(scriptname).$(ClusterId).out\n")
+        condorsub.write("error                 = $(scriptname).$(ClusterId).err\n")
         condorsub.write("log                   = log/log.$(ClusterId).log\n")
         condorsub.write("queue scriptname matching "+job_parent_folder+"/job_loop_"+str(iLoop)+"_file_*_"+task+"/*.sh\n")
         condorsub.close()
@@ -155,24 +164,32 @@ for iLoop in range(0,options.Nloop):
             mergescriptName=job_parent_folder+"/merge_BuildEopEta_EB_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
+            mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+            mergescript.write('eval `scram runtime -sh`\n');
+            mergescript.write("cd -\n");
             mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
             mergescript.close()
+            os.system("chmod 777 "+mergescriptName)
         if task=="ComputeIC_EB":
             mergescriptName=job_parent_folder+"/merge_ComputeIC_EB_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
+            mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+            mergescript.write('eval `scram runtime -sh`\n');
+            mergescript.write("cd -\n");
             mergescript.write("hadd -f "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
             if iLoop==0:
                 mergescript.write(str(options.exedir)+"/UpdateIC --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
             else:
                 mergescript.write(str(options.exedir)+"/UpdateIC --oldIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
             mergescript.close()
-            
+            os.system("chmod 777 "+mergescriptName)
+
         mergesubFilename=job_parent_folder+"/submit_merge"+task+"_loop_"+str(iLoop)+".sub"
         mergesub = open( mergesubFilename,"w")
         mergesub.write("executable            = "+mergescriptName+"\n")
-        mergesub.write("output                = output/out."+mergescriptName+".$(ClusterId).out\n")
-        mergesub.write("error                 = error/err."+mergescriptName+".$(ClusterId).err\n")
+        mergesub.write("output                = "+mergescriptName+".$(ClusterId).out\n")
+        mergesub.write("error                 = "+mergescriptName+".$(ClusterId).err\n")
         mergesub.write("log                   = log/log.$(ClusterId).log\n")
         mergesub.write("queue 1\n")
         mergesub.close()

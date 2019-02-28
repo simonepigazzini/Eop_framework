@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 
   for(Long64_t ientry=ientry0 ; ientry<Nentries ; ientry+=ientry_increment)
   {
-    if( ientry%10000==0 || (ientry-1)%10000==0)
+    if( ientry%100000==0 || (ientry-1)%100000==0)
       std::cout << "Processing entry "<< ientry << "\r" << std::flush;
     EB.GetEntry(ientry);
     for(iEle=0;iEle<2;++iEle)
