@@ -18,8 +18,8 @@ print("-------------------------------------------------------------------------
 #parameters
 ntupleName = "Run2017"
 current_dir = os.getcwd();
-#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
-ntuple_dir="/home/fabio/work/Eop_framework/data/"
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
+#ntuple_dir="/home/fabio/work/Eop_framework/data/"
 tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
@@ -153,7 +153,8 @@ for iLoop in range(0,options.Nloop):
         condorsub.write("executable            = $(scriptname)\n")
         condorsub.write("output                = $(scriptname).$(ClusterId).out\n")
         condorsub.write("error                 = $(scriptname).$(ClusterId).err\n")
-        condorsub.write("log                   = log/log.$(ClusterId).log\n")
+        condorsub.write("log                   = "+job_parent_folder+"/log/log.$(ClusterId).log\n")
+        condorsub.write('+JobFlavour           = "workday"\n')
         condorsub.write("queue scriptname matching "+job_parent_folder+"/job_loop_"+str(iLoop)+"_file_*_"+task+"/*.sh\n")
         condorsub.close()
         #fill the submitting manager file
@@ -190,7 +191,8 @@ for iLoop in range(0,options.Nloop):
         mergesub.write("executable            = "+mergescriptName+"\n")
         mergesub.write("output                = "+mergescriptName+".$(ClusterId).out\n")
         mergesub.write("error                 = "+mergescriptName+".$(ClusterId).err\n")
-        mergesub.write("log                   = log/log.$(ClusterId).log\n")
+        mergesub.write("log                   = "+job_parent_folder+"/log/log.$(ClusterId).log\n")
+        mergesub.write('+JobFlavour           = "longlunch"\n')
         mergesub.write("queue 1\n")
         mergesub.close()
 
@@ -199,16 +201,28 @@ for iLoop in range(0,options.Nloop):
             
 #setting hierarchy of the submitting manager file
 for iLoop in range(0,options.Nloop):
-    for task in tasklist:
-        if(iLoop>0 and task=="BuildEopEta_EB"):
-            dagFile.write("PARENT mergeComputeIC_EB_loop_"+str(iLoop-1)+" CHILD BuildEopEta_EB_loop_"+str(iLoop)+"\n")
-        dagFile.write("PARENT "+task+"_loop_"+str(iLoop)+" CHILD merge"+task+"_loop_"+str(iLoop)+"\n")
+    for iTask in range(0,len(tasklist)):
+        dagFile.write("PARENT "+tasklist[iTask]+"_loop_"+str(iLoop)+" CHILD merge"+tasklist[iTask]+"_loop_"+str(iLoop)+"\n")
+        if iTask<(len(tasklist)-1):
+            dagFile.write("PARENT merge"+tasklist[iTask]+"_loop_"+str(iLoop)+" CHILD "+tasklist[iTask+1]+"_loop_"+str(iLoop)+"\n")
+        else:
+            if( iLoop < (options.Nloop-1) ):
+                dagFile.write("PARENT merge"+tasklist[iTask]+"_loop_"+str(iLoop)+" CHILD "+tasklist[0]+"_loop_"+str(iLoop+1)+"\n")
+
+#add possibility to re-submit failed jobs
+for iLoop in range(0,options.Nloop):
+    for iTask in range(0,len(tasklist)):
+        dagFile.write("Retry "+tasklist[iTask]+"_loop_"+str(iLoop)+" 3\n")
+        dagFile.write("Retry merge"+tasklist[iTask]+"_loop_"+str(iLoop)+" 3\n")
 
 dagFile.close()
 
+submit_command = "condor_submit_dag "+dagFilename
+print("SUBMIT COMMAND: "+submit_command)
 #submit in case the option is given
-if options.submit:
-    submit_command = "condor_submit_dag "+dagFilename
+if(options.submit):
+    os.system(submit_command)
+
 
 
 
