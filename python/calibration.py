@@ -111,20 +111,25 @@ for iLoop in range(0,options.Nloop):
                 UPDATEIC_OUTPUT= str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+split+".root"
                 BUILDEOPETA_INPUT_OPTION=""
                 UPDATEIC_INPUT_OPTION=""
+                EOPWEIGHTRANGE_OPTION=""
                 if iLoop==0:
                     if task=="BuildEopEta_EB":
                         BUILDEOPETA_INPUT_OPTION=""
                         UPDATEIC_INPUT_OPTION=""
+                        EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.9"
                     if task=="ComputeIC_EB":
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION=""
+                        EOPWEIGHTRANGE_OPTION=""
                 else:
                     if task=="BuildEopEta_EB":
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
+                        EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.15"
                     if task=="ComputeIC_EB":
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
+                        EOPWEIGHTRANGE_OPTION=""
 
                 ##### creates script #######
                 outScriptName=jobdir+"/job_file_"+str(iFile)+"_"+split+".sh"
@@ -141,6 +146,7 @@ for iLoop in range(0,options.Nloop):
                     " "+UPDATEIC_INPUT_OPTION+
                     " "+BUILDEOPETA_INPUT_OPTION+
                     " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
+                    " "+EOPWEIGHTRANGE_OPTION+
                     " --ComputeIC_output "+UPDATEIC_OUTPUT+
                     " --"+split+"\n")
                 outScript.write("echo finish\n") 

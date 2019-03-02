@@ -28,10 +28,11 @@ using namespace std;
 
 void PrintUsage()
 {
-  cerr << ">>>>> usage:  BuildEopEta_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --BuildEopEta_output <outputFileName> --odd[or --even]" << endl;
+  cerr << ">>>>> usage:  BuildEopEta_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --Eopweightrange <weightrange> --BuildEopEta_output <outputFileName> --odd[or --even]" << endl;
   cerr << "               " <<            " --cfg                MANDATORY"<<endl;
   cerr << "               " <<            " --inputIC            OPTIONAL, can be also provided in the cfg"<<endl;
   cerr << "               " <<            " --Eopweight          OPTIONAL, can be also provided in the cfg" <<endl;
+  cerr << "               " <<            " --Eopweightrange     OPTIONAL, can be also provided in the cfg" <<endl; 
   cerr << "               " <<            " --BuildEopEta_output OPTIONAL, can be also provided in the cfg" <<endl;
   cerr << "               " <<            " --odd[or --even]     OPTIONAL" <<endl;
 }
@@ -43,7 +44,9 @@ int main(int argc, char* argv[])
   vector<string> weightcfg;
   string outfilename="";
   string splitstat="";
+  float Eopweightrange = 0.;
 
+  //Parse the input options
   for(int iarg=1; iarg<argc; ++iarg)
   {
     if(string(argv[iarg])=="--cfg")
@@ -59,11 +62,10 @@ int main(int argc, char* argv[])
       weightcfg.push_back(argv[iarg+2]);
       weightcfg.push_back(argv[iarg+3]);
     }
+    if(string(argv[iarg])=="--Eopweightrange")
+      Eopweightrange=atof(argv[iarg+1]);
     if(string(argv[iarg])=="--BuildEopEta_output")
-    {
-      cout<<"I AM HERE"<<endl;
       outfilename=argv[iarg+1];
-    }
     if(string(argv[iarg])=="--odd")
       splitstat="odd";
     if(string(argv[iarg])=="--even")
@@ -96,15 +98,22 @@ int main(int argc, char* argv[])
     else
       outfilename = "EopEta.root";
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
-  float Eopweightrange = 0.8;
-  if(config.OptExist("Input.Eopweightrange"))
-    Eopweightrange = config.GetOpt<float> ("Input.Eopweightrange");
-  cout<<"> Set Eop range from "<<1.-Eopweightrange<<" to "<<1.+Eopweightrange<<endl;
 
+
+  //define the range for the E/p weight histogram 
+  if(Eopweightrange==0.)
+    if(config.OptExist("Input.Eopweightrange"))
+      Eopweightrange = config.GetOpt<float> ("Input.Eopweightrange");
+    else
+    {
+      cout<<"[WARNING]: no Eopweightrange setting provided --> use default value"<<endl; 
+      Eopweightrange = 0.8;
+    }
+  cout<<"> Set Eop range from "<<1.-Eopweightrange<<" to "<<1.+Eopweightrange<<endl;
   /////////////////////////////////////////////////////
   //for debug set the binwidth equal to the previous calibration code
   float eop_binwidth = (1.9-0.2)/100;
-  float Neop_bins = (int)(2*Eopweightrange / eop_binwidth);
+  int Neop_bins = (int)(2*Eopweightrange / eop_binwidth);
   /////////////////////////////////////////////////////
   TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
 
@@ -130,7 +139,6 @@ int main(int argc, char* argv[])
       ientry_increment=2;
     }
   
-
   for(Long64_t ientry=ientry0 ; ientry<Nentries ; ientry+=ientry_increment)
   {
     if( ientry%100000==0 || (ientry-1)%100000==0)
@@ -154,8 +162,8 @@ int main(int argc, char* argv[])
 	  // getchar();
 	  //}
 	}
-	else
-	  cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
+	//else
+	//  cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
       }
     }
   }
