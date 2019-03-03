@@ -270,6 +270,13 @@ Float_t calorimeter::GetEnergy(const Int_t &i)
   return energySCEle[i];
 }
 
+Float_t calorimeter::GetESEnergy(const Int_t &i)
+{
+  if(i>3)
+    cerr<<"[ERROR]:array out of range"<<endl;
+  return esEnergySCEle[i];
+}
+
 Float_t  calorimeter::GetP(const Int_t &i)
 {
   if(i>3)

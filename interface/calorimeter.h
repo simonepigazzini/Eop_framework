@@ -31,6 +31,7 @@ class calorimeter
   Long64_t GetEntry(const Long64_t &i);
   Bool_t   isSelected(const Int_t &i) {return selection->EvalInstance(i);}
   Float_t  GetEnergy(const Int_t &i);
+  Float_t  GetESEnergy(const Int_t &i);
   Float_t  GetP(const Int_t &i);
   Float_t  GetPcorrected(const Int_t &i);
   Float_t  GetEtaSC(const Int_t &i);
@@ -58,7 +59,7 @@ class calorimeter
   void LoadIC(const std::vector<std::string> &ICcfg);
   void InitializeIC();
 
- private:
+ protected:
   void BranchSelected(TChain* chain);
   void BranchExtraCalib(TChain* chain);
 
@@ -72,6 +73,7 @@ class calorimeter
   TGraphErrors* electron_momentum_correction;
   TGraphErrors* positron_momentum_correction;
   TH2F* weight;
+
   ///! Declaration of leaf types
   UInt_t          runNumber;
   Int_t           lumiBlock;
@@ -85,26 +87,16 @@ class calorimeter
   Float_t         energySCEle[3];
   Float_t         etaSCEle[3];
   Float_t         esEnergySCEle[3];
-  //Float_t         e3x3SCEle[3];
   Float_t         pAtVtxGsfEle[3];
   Float_t         fbremEle[3];
-  //Float_t         energyMCEle[3];
-  //Float_t         etaMCEle[3];
-  //Float_t         phiMCEle[3];
-  ///! Ele 1 variables
+
+  ///! RecHit variables
   std::vector<float>   *ERecHit[2];
-  std::vector<int>     *XRecHit[2];  //ETA
-  std::vector<int>     *YRecHit[2];  //PHI
+  std::vector<int>     *XRecHit[2];  //iETA
+  std::vector<int>     *YRecHit[2];  //iPHI
   std::vector<int>     *ZRecHit[2];
   std::vector<int>     *recoFlagRecHit[2];
   std::vector<float>   *fracRecHit[2];
-  ///! Ele 2 variables
-  //std::vector<float>   *energyRecHitSCEle2;
-  //std::vector<int>     *XRecHitSCEle2;  //ETA
-  //std::vector<int>     *YRecHitSCEle2;  //PHI
-  //std::vector<int>     *ZRecHitSCEle2;
-  //std::vector<int>     *recoFlagRecHitSCEle2;
-  //std::vector<float>   *fracRecHitSCEle2;
 };
 
 
