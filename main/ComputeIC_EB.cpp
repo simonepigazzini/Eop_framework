@@ -120,6 +120,8 @@ int main(int argc, char* argv[])
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
   cout<<Nentries<<" entries"<<endl;
+  if(Nentries==0)
+    return -1;
   float E,p,eta,IC,weight,regression;
   int iEle, index, ieta, iphi, ietaSeed;
   vector<float>* ERecHit;

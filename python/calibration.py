@@ -24,18 +24,27 @@ tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the 
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
 tasklist = ["BuildEopEta_EB","ComputeIC_EB"]
-splitstat = ["odd","even"]
+
 
 #parse arguments
 parser = OptionParser()
 parser.add_option('--submit',    action='store_true',           dest='submit', default=False,      help='submit jobs')
+parser.add_option("-l", "--label",     action="store", type="str", dest="label",                            help="job label")
 parser.add_option("-v", "--verbosity", action="store", type="int",    dest="verbosity",    default=1,          help="verbosity level")
 parser.add_option("-o", "--outdir",    action="store", type="str", dest="outdir",       default="./",       help="output directory")
 parser.add_option("-e", "--exedir",    action="store", type="str", dest="exedir",       default="./build/", help="executable directory")
 parser.add_option("-c", "--cfg",       action="store", type="str", dest="configFile",                       help="template config file")
-parser.add_option("-l", "--label",     action="store", type="str", dest="label",                            help="job label")
 parser.add_option("-N", "--Nloop",     action="store", type="int",    dest="Nloop",        default=15,         help="number of loop")
+parser.add_option("--RestartFromLoop", action="store", type="int",    dest="RestartFromLoop",    default=0,          help="restart existing calibration from the given loop")
+parser.add_option('--odd',             action='store_true',           dest='odd', default=False,      help='run only on odd entries')
+parser.add_option('--even',             action='store_true',           dest='even', default=False,      help='run only on even entries')
 (options, args) = parser.parse_args()
+
+splitstat = ["odd","even"]
+if(options.odd):
+    splitstat = ["odd"]
+if(options.even):
+    splitstat = ["even"]
 
 #create outdir
 os.system("mkdir -p "+str(options.outdir))
@@ -82,7 +91,7 @@ dagFile = open( dagFilename,"w")
 #make the monitoring script
 job_Nb={}
 
-for iLoop in range(0,options.Nloop):
+for iLoop in range(options.RestartFromLoop,options.Nloop):
     print("> Generating job for loop "+str(iLoop))
 
     for task in tasklist:
@@ -206,7 +215,7 @@ for iLoop in range(0,options.Nloop):
         dagFile.write("JOB merge"+task+"_loop_"+str(iLoop)+" "+mergesubFilename+"\n")
             
 #setting hierarchy of the submitting manager file
-for iLoop in range(0,options.Nloop):
+for iLoop in range(options.RestartFromLoop,options.Nloop):
     for iTask in range(0,len(tasklist)):
         dagFile.write("PARENT "+tasklist[iTask]+"_loop_"+str(iLoop)+" CHILD merge"+tasklist[iTask]+"_loop_"+str(iLoop)+"\n")
         if iTask<(len(tasklist)-1):
@@ -216,7 +225,7 @@ for iLoop in range(0,options.Nloop):
                 dagFile.write("PARENT merge"+tasklist[iTask]+"_loop_"+str(iLoop)+" CHILD "+tasklist[0]+"_loop_"+str(iLoop+1)+"\n")
 
 #add possibility to re-submit failed jobs
-for iLoop in range(0,options.Nloop):
+for iLoop in range(options.RestartFromLoop,options.Nloop):
     for iTask in range(0,len(tasklist)):
         dagFile.write("Retry "+tasklist[iTask]+"_loop_"+str(iLoop)+" 3\n")
         dagFile.write("Retry merge"+tasklist[iTask]+"_loop_"+str(iLoop)+" 3\n")
@@ -228,7 +237,3 @@ print("SUBMIT COMMAND: "+submit_command)
 #submit in case the option is given
 if(options.submit):
     os.system(submit_command)
-
-
-
-
