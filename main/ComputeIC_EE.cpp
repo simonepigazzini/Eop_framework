@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "calorimeter.h"
+#include "EEcalorimeter.h"
 #include "crystal.h"
 
 #include <iostream>
@@ -29,7 +29,7 @@ using namespace std;
 
 void PrintUsage()
 {
-  cerr << ">>>>> usage:  ComputeIC_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --ComputeIC_output <outputFileName> --odd[or --even]" << endl;
+  cerr << ">>>>> usage:  ComputeIC_EE --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --ComputeIC_output <outputFileName> --odd[or --even]" << endl;
   cerr << "               " <<            " --cfg                MANDATORY"<<endl;
   cerr << "               " <<            " --inputIC            OPTIONAL, can be also provided in the cfg"<<endl;
   cerr << "               " <<            " --Eopweight          OPTIONAL, can be also provided in the cfg" <<endl;
@@ -79,21 +79,21 @@ int main(int argc, char* argv[])
   config.ParseConfigFile(cfgfilename.c_str());
   
   //define the calorimeter object to easily access to the ntuples data
-  calorimeter EB(config);
+  EEcalorimeter EE(config);
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
   if(weightcfg.size()>0)
-    EB.LoadEopWeight(weightcfg);
+    EE.LoadEopWeight(weightcfg);
   if(ICcfg.size()>0)
-    EB.LoadIC(ICcfg);
+    EE.LoadIC(ICcfg);
 
   //eta, phi boundaries are taken by the calorimeter constructor from configfile 
   float ietamin, ietamax, iphimin, iphimax;
   int Neta, Nphi;
-  EB.GetEtaboundaries(ietamin, ietamax);
-  EB.GetPhiboundaries(iphimin, iphimax);
-  Neta=EB.GetNeta();
-  Nphi=EB.GetNphi();
+  EE.GetEtaboundaries(ietamin, ietamax);
+  EE.GetPhiboundaries(iphimin, iphimax);
+  Neta=EE.GetNeta();
+  Nphi=EE.GetNphi();
 
   //define the output 
   if(outfilename == "")
@@ -118,10 +118,10 @@ int main(int argc, char* argv[])
   }
 
   //loop over entries to fill the histo  
-  Long64_t Nentries=EB.GetEntries();
+  Long64_t Nentries=EE.GetEntries();
   cout<<Nentries<<" entries"<<endl;
   float E,p,eta,IC,weight,regression;
-  int iEle, index, ieta, iphi, ietaSeed;
+  int iEle, index, ieta, iphi, ringSeed;
   vector<float>* ERecHit;
   vector<float>* fracRecHit;
   vector<int>*   XRecHit;
@@ -149,23 +149,23 @@ int main(int argc, char* argv[])
   {
     if( ientry%100000==0 || (ientry-1)%100000==0)
       std::cout << "Processing entry "<< ientry << "\r" << std::flush;
-    EB.GetEntry(ientry);
+    EE.GetEntry(ientry);
     for(iEle=0;iEle<2;++iEle)
     {
-      if(EB.isSelected(iEle))
+      if(EE.isSelected(iEle))
       {
-	ERecHit=EB.GetERecHit(iEle);
-	fracRecHit=EB.GetfracRecHit(iEle);
-	XRecHit=EB.GetXRecHit(iEle);
-	YRecHit=EB.GetYRecHit(iEle);
-	//ZRecHit=EB.GetZRecHit(iEle);
-	recoFlagRecHit=EB.GetrecoFlagRecHit(iEle);
-	E=EB.GetICEnergy(iEle);
-	p=EB.GetPcorrected(iEle);
-	//eta=EB.GetEtaSC(iEle);
-	ietaSeed=EB.GetietaSeed(iEle);
-	weight=EB.GetWeight(ietaSeed,E/p);
-	regression=EB.GetRegression(iEle);
+	ERecHit=EE.GetERecHit(iEle);
+	fracRecHit=EE.GetfracRecHit(iEle);
+	XRecHit=EE.GetXRecHit(iEle);
+	YRecHit=EE.GetYRecHit(iEle);
+	//ZRecHit=EE.GetZRecHit(iEle);
+	recoFlagRecHit=EE.GetrecoFlagRecHit(iEle);
+	E=EE.GetICEnergy(iEle);
+	p=EE.GetPcorrected(iEle);
+	//eta=EE.GetEtaSC(iEle);
+	ringSeed=EE.GetEERingSeed(iEle);
+	weight=EE.GetWeight(ringSeed,E/p);
+	regression=EE.GetRegression(iEle);
 	//cout<<"E="<<E<<"\tp="<<p<<"\teta="<<eta<<"\tweight="<<weight<<"\tregression="<<regression<<endl;
 	for(unsigned iRecHit=0; iRecHit<ERecHit->size(); ++iRecHit)
 	{
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 	  ieta=XRecHit->at(iRecHit);
 	  iphi=YRecHit->at(iRecHit);
 	  index = fromIetaIphito1Dindex(ieta, iphi, Neta, Nphi, ietamin, iphimin);
-	  IC=EB.GetIC(index);
+	  IC=EE.GetIC(index);
 	  //cout<<"entry="<<ientry<<endl;
 	  //cout<<"ieta="<<ieta<<"\tiphi="<<iphi<<"\tindex="<<index<<"\tIC="<<IC<<endl;
 	  //cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<endl;
@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
       if (denominator1D[index]!=0)
       {
 	ICpull->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
-	temporaryIC->SetBinContent(xbin,ybin, EB.GetIC(index) * numerator1D[index]/denominator1D[index]);	
+	temporaryIC->SetBinContent(xbin,ybin, EE.GetIC(index) * numerator1D[index]/denominator1D[index]);	
       }
     }
 

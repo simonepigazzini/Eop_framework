@@ -151,16 +151,20 @@ int main(int argc, char* argv[])
       {
 	E=EE.GetICEnergy(iEle);
 	p=EE.GetPcorrected(iEle);
-	//eta=EE.GetEtaSC(iEle);
+	eta=EE.GetEtaSC(iEle);
 	ringSeed=EE.GetEERingSeed(iEle);
+	vector<float>* ERecHit= EE.GetERecHit(iEle);
+	vector<float>* fracRecHit = EE.GetfracRecHit(iEle);
+	for(unsigned i=0; i<ERecHit->size(); ++i)
+	  cout<<"E["<<i<<"]="<<ERecHit->at(i)<<"\tfrac["<<i<<"]="<<fracRecHit->at(i)<<endl;
 
 	if(p!=0)
 	{
 	  Eop_vs_Eta->Fill(ringSeed,E/p);
 	  //	  if(Eop_vs_Eta->GetXaxis()->FindBin(eta) == 80)
 	  //{
-	  // cout<<"E="<<E<<"\tp="<<p<<"\teta_seed="<<eta/1.477*85<<"\teta="<<eta<<endl;
-	  // getchar();
+	  cout<<"E="<<E<<"\tE_es="<<EE.GetESEnergy(iEle)<<"\tregr="<<EE.GetRegression(iEle)<<"\tp="<<p<<"\tringSeed="<<ringSeed<<"\teta="<<eta<<endl;
+	  getchar();
 	  //}
 	}
 	//else

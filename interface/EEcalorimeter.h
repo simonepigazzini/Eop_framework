@@ -31,8 +31,9 @@ class EEcalorimeter : public calorimeter
   //---utils--
   Float_t  GetPcorrected(const Int_t &i);
   Float_t  GetRegression(const Int_t &i) {return energySCEle[i]/(rawEnergySCEle[i]+esEnergySCEle[i]);}
-
-  Int_t GetEERingSeed(const Int_t &i);
+  Float_t  GetICEnergy(const Int_t &i);
+  
+  Int_t    GetEERingSeed(const Int_t &i);
   void     GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i);
   int      GetietaSeed(const Int_t &i);
   int      GetiphiSeed(const Int_t &i);

@@ -8,7 +8,7 @@ NOTE
     - more updated version of calibration code: https://github.com/lbrianza/ECALELF      
     - more updated version of	monitoring code:  https://gitlab.cern.ch/vciriolo/ECALELF/tree/eop      
     - master of ECALELF:                        https://gitlab.cern.ch/shervin/ECALELF      
-
+ - this code uses the very useful CfgManager class cloned from https://github.com/simonepigazzini/CfgManager to parse options from file 
 
 
 ## Setup
