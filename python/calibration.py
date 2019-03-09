@@ -16,14 +16,12 @@ print(datetime.datetime.now())
 print("----------------------------------------------------------------------------------")
 
 #parameters
-ntupleName = "Run2017"
 current_dir = os.getcwd();
-ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing the ntuples for the monitoring
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing all the ntuples of interest
 #ntuple_dir="/home/fabio/work/Eop_framework/data/"
-tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring
+tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
 #tag_list = ["Run2017C"] #tag for the monitoring
-ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag for the monitoring containing some error)
-tasklist = ["BuildEopEta_EB","ComputeIC_EB"]
+ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag containing some error)
 
 
 #parse arguments
@@ -36,8 +34,10 @@ parser.add_option("-e", "--exedir",    action="store", type="str", dest="exedir"
 parser.add_option("-c", "--cfg",       action="store", type="str", dest="configFile",                       help="template config file")
 parser.add_option("-N", "--Nloop",     action="store", type="int",    dest="Nloop",        default=15,         help="number of loop")
 parser.add_option("--RestartFromLoop", action="store", type="int",    dest="RestartFromLoop",    default=0,          help="restart existing calibration from the given loop")
-parser.add_option('--odd',             action='store_true',           dest='odd', default=False,      help='run only on odd entries')
-parser.add_option('--even',             action='store_true',           dest='even', default=False,      help='run only on even entries')
+parser.add_option('--odd',             action='store_true',           dest='odd',  default=False,      help='run only on odd entries')
+parser.add_option('--even',            action='store_true',           dest='even', default=False,      help='run only on even entries')
+parser.add_option('--EE',              action='store_true',           dest='EE',   default=False,       help='run endcap calibration')
+
 (options, args) = parser.parse_args()
 
 splitstat = ["odd","even"]
@@ -45,6 +45,12 @@ if(options.odd):
     splitstat = ["odd"]
 if(options.even):
     splitstat = ["even"]
+
+tasklist = ["BuildEopEta_EB","ComputeIC_EB"]
+if(options.EE):
+    tasklist = ["BuildEopEta_EE","ComputeIC_EE"]
+else:
+    print("setting up barrel calibration, if you want endcap calibration add the option --EE")
 
 #create outdir
 os.system("mkdir -p "+str(options.outdir))
@@ -88,9 +94,7 @@ os.system("mkdir -p "+job_parent_folder+"/log/")
 dagFilename=job_parent_folder+"/submit_manager.dag"
 dagFile = open( dagFilename,"w")
 
-#make the monitoring script
-job_Nb={}
-
+#make the monitoring files .cfg, .sh, and .sub
 for iLoop in range(options.RestartFromLoop,options.Nloop):
     print("> Generating job for loop "+str(iLoop))
 
@@ -122,20 +126,27 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                 UPDATEIC_INPUT_OPTION=""
                 EOPWEIGHTRANGE_OPTION=""
                 if iLoop==0:
-                    if task=="BuildEopEta_EB":
+                    if "BuildEopEta" in task:
                         BUILDEOPETA_INPUT_OPTION=""
                         UPDATEIC_INPUT_OPTION=""
-                        EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.9"
-                    if task=="ComputeIC_EB":
+                        if "EB" in task:
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.9"
+                        else:
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.95"                        
+                    if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION=""
                         EOPWEIGHTRANGE_OPTION=""
                 else:
-                    if task=="BuildEopEta_EB":
+                    if "BuildEopEta" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
-                        EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.15"
-                    if task=="ComputeIC_EB":
+                        if "EB" in task:
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.15"
+                        else:
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.95"                        
+
+                    if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
                         EOPWEIGHTRANGE_OPTION=""
@@ -176,8 +187,8 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
         dagFile.write("JOB "+task+"_loop_"+str(iLoop)+" "+condorsubFilename+"\n")
 
         #submit the merging step
-        if task=="BuildEopEta_EB":
-            mergescriptName=job_parent_folder+"/merge_BuildEopEta_EB_loop_"+str(iLoop)+".sh"
+        if "BuildEopEta" in task:
+            mergescriptName=job_parent_folder+"/merge_"+task+"_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
             mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
@@ -186,8 +197,8 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
             mergescript.close()
             os.system("chmod 777 "+mergescriptName)
-        if task=="ComputeIC_EB":
-            mergescriptName=job_parent_folder+"/merge_ComputeIC_EB_loop_"+str(iLoop)+".sh"
+        if "ComputeIC" in task:
+            mergescriptName=job_parent_folder+"/merge_"+task+"_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
             mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
