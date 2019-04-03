@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/bin/python
 import os
 import glob
 import math
@@ -161,7 +161,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                 outScript.write("cd -\n");
                 outScript.write("echo $PWD\n");
                 outScript.write(
-                    str(options.exedir)+"/"+task+
+                    str(options.exedir)+"/"+task+".exe"+
                     " --cfg "+cfgfilename+
                     " "+UPDATEIC_INPUT_OPTION+
                     " "+BUILDEOPETA_INPUT_OPTION+
@@ -206,9 +206,9 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("cd -\n");
             mergescript.write("hadd -f "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
             if iLoop==0:
-                mergescript.write(str(options.exedir)+"/UpdateIC --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
             else:
-                mergescript.write(str(options.exedir)+"/UpdateIC --oldIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --oldIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
             mergescript.close()
             os.system("chmod 777 "+mergescriptName)
 
