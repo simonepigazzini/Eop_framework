@@ -6,76 +6,9 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(EoP_framework)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-# You need to tell CMake where to find the ROOT installation. This can be done in a number of ways:
-#   - ROOT built with classic configure/make use the provided $ROOTSYS/etc/cmake/FindROOT.cmake
-#   - ROOT built with CMake. Add in CMAKE_PREFIX_PATH the installation prefix for ROOT
-list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-
-#---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
-
-#---Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
-include(${ROOT_USE_FILE})
-include_directories(${PROJECT_SOURCE_DIR}/interface)
-
-#----------------------------------------------------------------------------
-# Locate sources and headers for this project
-# NB: headers are included so they will show up in IDEs
-#
-file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc )
-file(GLOB headers ${PROJECT_SOURCE_DIR}/interface/*.h )
-
-#----------------------------------------------------------------------------
-# Add the executable, and link it to the Geant4 libraries
-#
-#add_executable(BuildEopEta main/BuildEopEta.cpp ${sources} ${headers})
-#target_link_libraries(BuildEopEta ${ROOT_LIBRARIES})
-add_executable(BuildEopEta_EB main/BuildEopEta_EB.cpp ${sources} ${headers})
-target_link_libraries(BuildEopEta_EB ${ROOT_LIBRARIES})
-add_executable(BuildEopEta_EE main/BuildEopEta_EE.cpp ${sources} ${headers})
-target_link_libraries(BuildEopEta_EE ${ROOT_LIBRARIES})
-add_executable(drawComparisonPlots main/drawComparisonPlots.cpp ${sources} ${headers})
-target_link_libraries(drawComparisonPlots ${ROOT_LIBRARIES})
-#add_executable(ComputeIC main/ComputeIC.cpp ${sources} ${headers})
-#target_link_libraries(ComputeIC ${ROOT_LIBRARIES})
-add_executable(ComputeIC_EB main/ComputeIC_EB.cpp ${sources} ${headers})
-target_link_libraries(ComputeIC_EB ${ROOT_LIBRARIES})
-add_executable(ComputeIC_EE main/ComputeIC_EE.cpp ${sources} ${headers})
-target_link_libraries(ComputeIC_EE ${ROOT_LIBRARIES})
-add_executable(UpdateIC main/UpdateIC.cpp ${sources} ${headers})
-target_link_libraries(UpdateIC ${ROOT_LIBRARIES})
-#add_executable(validate_indexing main/validate_indexing.cpp ${sources} ${headers})
-#target_link_libraries(validate_indexing ${ROOT_LIBRARIES})
-add_executable(CalibrationPlots main/CalibrationPlots.cpp ${sources} ${headers})
-target_link_libraries(CalibrationPlots ${ROOT_LIBRARIES})
-
-#----------------------------------------------------------------------------
-# Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
-#
-#install(TARGETS BuildEopEta DESTINATION bin)
-install(TARGETS BuildEopEta_EB DESTINATION bin)
-install(TARGETS BuildEopEta_EE DESTINATION bin)
-install(TARGETS drawComparisonPlots DESTINATION bin)
-#install(TARGETS ComputeIC DESTINATION bin)
-install(TARGETS ComputeIC_EB DESTINATION bin)
-install(TARGETS ComputeIC_EE DESTINATION bin)
-install(TARGETS UpdateIC DESTINATION bin)
-#install(TARGETS validate_indexing DESTINATION bin)
-install(TARGETS CalibrationPlots DESTINATION bin)
-
-# If necessary, use the RELATIVE flag, otherwise each source file may be listed 
-# with full pathname. RELATIVE may makes it easier to extract an executable name
-# automatically.
-# file( GLOB APP_SOURCES RELATIVE app/*.cxx )
-#file(GLOB APP_SOURCES ${PROJECT_SOURCE_DIR}/main/*.cpp )
-#foreach( testsourcefile ${APP_SOURCES} )
-    # I used a simple string replace, to cut off .cpp.
-#    string( REPLACE ".cpp" "" testname ${testsourcefile} )
-#    add_executable( ${testname} ${testsourcefile} ${sources} ${headers})
-    # Make sure YourLib is linked to each app
-#    target_link_libraries( ${testname} ${ROOT_LIBRARIES} )
-#    install(TARGETS ${testname} DESTINATION bin)
-#endforeach( testsourcefile ${APP_SOURCES} )
-
-
+add_subdirectory (interface)
+add_subdirectory (main)
