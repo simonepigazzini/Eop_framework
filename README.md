@@ -16,9 +16,16 @@ compilation with cmake should be fine with much more compiler/o.s./rootversion
    ```
    git clone git@github.com:fabio-mon/Eop_framework.git
    cd Eop_framework
-   mkdir build
-   cd build && cmake ..
-   make
+   mkdir build lib bin    
+   cd build       
+   cmake ..     
+   make     
    ```
-NOTE: if you add a new class you have to re-run `cd build && cmake ..`    
-NOTE: if you add a new executable you have to properly modify the CMakeList.txt and then re-run `cd build && cmake ..`
+NOTE: if you add a new class/header/source you have to manually cancel the cmake cache:    
+   ```
+   cd Eop_framework/build
+   rm -r ./*    
+   cmake ..   	   
+   make	 
+   ```
+ENJOY :)   
