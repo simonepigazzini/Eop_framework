@@ -31,6 +31,8 @@ class calorimeter
   Long64_t GetEntry(const Long64_t &i);
   Bool_t   isSelected(const Int_t &i) {return selection->EvalInstance(i);}
   Float_t  GetEnergy(const Int_t &i);
+  Float_t  GetEnergyRaw(const Int_t &i);
+  Int_t    GeteventNumber() {return eventNumber;}
   Float_t  GetESEnergy(const Int_t &i);
   Float_t  GetP(const Int_t &i);
   Float_t  GetPcorrected(const Int_t &i);
