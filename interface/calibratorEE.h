@@ -1,5 +1,5 @@
-#ifndef EECALORIMETER__
-#define EECALORIMETER__
+#ifndef calibratorEE__
+#define calibratorEE__
 
 #include <iostream>
 #include <string>
@@ -7,9 +7,8 @@
 
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "crystal.h"
 #include "TEndcapRings.h"
-#include "calorimeter.h"
+#include "calibrator.h"
 
 #include "TTree.h"
 #include "TChain.h"
@@ -20,28 +19,28 @@
 #include "TFile.h"
 #include "TObject.h"
 
-class EEcalorimeter : public calorimeter
+class calibratorEE : public calibrator
 {
 
  public:
   //---ctors---
-  EEcalorimeter(CfgManager conf);
+  calibratorEE(CfgManager conf);
   //---dtor---
-  ~EEcalorimeter();
+  ~calibratorEE();
   //---utils--
   Float_t  GetPcorrected(const Int_t &i);
-  Float_t  GetRegression(const Int_t &i) {return energySCEle[i]/(rawEnergySCEle[i]+esEnergySCEle[i]);}
+  Float_t  GetRegression(const Int_t &i) {return energySCEle_[i]/(rawEnergySCEle_[i]+esEnergySCEle_[i]);}
   Float_t  GetICEnergy(const Int_t &i);
   
   Int_t    GetEERingSeed(const Int_t &i);
   void     GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i);
   int      GetietaSeed(const Int_t &i);
   int      GetiphiSeed(const Int_t &i);
-  int      GetixSeed(const Int_t &i) {return xSeed[i];}
-  int      GetiySeed(const Int_t &i) {return ySeed[i];}
+  int      GetixSeed(const Int_t &i) {return xSeed_[i];}
+  int      GetiySeed(const Int_t &i) {return ySeed_[i];}
 
  private:
-  TEndcapRings* eeRing;
+  TEndcapRings* eeRing_;
 
 };
 

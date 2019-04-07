@@ -1,8 +1,7 @@
 #include "utils.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "EEcalorimeter.h"
-#include "crystal.h"
+#include "calibratorEE.h"
 
 #include <iostream>
 #include <string>
@@ -79,7 +78,7 @@ int main(int argc, char* argv[])
   config.ParseConfigFile(cfgfilename.c_str());
   
   //define the calorimeter object to easily access to the ntuples data
-  EEcalorimeter EE(config);
+  calibratorEE EE(config);
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
   if(weightcfg.size()>0)

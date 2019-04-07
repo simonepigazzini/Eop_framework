@@ -1,7 +1,6 @@
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "calorimeter.h"
-#include "crystal.h"
+#include "calibrator.h"
 
 #include <iostream>
 #include <string>
@@ -82,8 +81,8 @@ int main(int argc, char* argv[])
   CfgManager config;
   config.ParseConfigFile(cfgfilename.c_str());
 
-  //define the calorimeter object to easily access to the ntuples data
-  calorimeter EB(config);
+  //define the calibrator object to easily access to the ntuples data
+  calibrator EB(config);
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
   if(weightcfg.size()>0)
