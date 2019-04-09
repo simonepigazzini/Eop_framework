@@ -52,6 +52,7 @@ class ECALELFInterface
   void BranchExtraCalib(TChain* chain);
 
   TTreeFormula *selection_;
+  std::string selection_str_;
   std::map<std::string,TChain*> ch_;
   TChain* chain_;
   int Ncurrtree_;

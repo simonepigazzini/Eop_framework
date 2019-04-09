@@ -80,8 +80,8 @@ ECALELFInterface::ECALELFInterface(CfgManager conf)
 
   //-------------------------------------
   //load event selection
-  string selection_str = conf.GetOpt<string> ("Input.selection");
-  selection_ = new TTreeFormula("selection", selection_str.c_str(), chain_);
+  selection_str_ = conf.GetOpt<string> ("Input.selection");
+  selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
   
 }
 
