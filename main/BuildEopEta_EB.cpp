@@ -114,8 +114,9 @@ int main(int argc, char* argv[])
   //for debug set the binwidth equal to the previous calibration code
   float eop_binwidth = (1.9-0.2)/100;
   int Neop_bins = (int)(2*Eopweightrange / eop_binwidth);
+  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, 100, 0.2, 1.9);
   /////////////////////////////////////////////////////
-  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
+  //TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
@@ -158,11 +159,21 @@ int main(int argc, char* argv[])
 	if(p!=0)
 	{
 	  Eop_vs_Eta->Fill(ietaSeed,E/p);
-	  //	  if(Eop_vs_Eta->GetXaxis()->FindBin(eta) == 80)
-	  //{
-	  // cout<<"E="<<E<<"\tp="<<p<<"\teta_seed="<<eta/1.477*85<<"\teta="<<eta<<endl;
-	  // getchar();
-	  //}
+	  /*	  
+	  std::cout<<"evNumber="<<EB.GeteventNumber()<<"\tE="<<E<<"\tp="<<p<<"\teta_seed="<<ietaSeed<<"\tbin="<<Eop_vs_Eta->GetYaxis()->FindBin(E/p)<<std::endl;
+	  if((ietaSeed == -14 || ietaSeed == -11) && fabs(E-6.1081)<0.0001)
+          {
+	    std::cout<<"evNumber="<<EB.GeteventNumber()<<"\tE="<<E<<"\tp="<<p<<"\teta_seed="<<ietaSeed<<std::endl;
+	    vector<float>* ERecHit=EB.GetERecHit(iEle);
+	    vector<float>* fracRecHit=EB.GetfracRecHit(iEle);
+	    vector<int>*   XRecHit=EB.GetXRecHit(iEle);
+	    for(unsigned iRecHit=0; iRecHit<ERecHit->size(); ++iRecHit)
+	    {
+	      cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tXRH="<<XRecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<"\tE*f="<<ERecHit->at(iRecHit)*fracRecHit->at(iRecHit)<<endl;
+	    }
+	    getchar();
+	  }
+	  */
 	}
 	//else
 	//  cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
