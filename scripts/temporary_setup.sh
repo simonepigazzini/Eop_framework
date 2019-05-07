@@ -9,3 +9,5 @@ then
 fi
 
 alias cmake_clean='rm -r '$SCRIPTDIRECTORY/../build/*
+alias cmake_reset='rm -r '$SCRIPTDIRECTORY/../build/*' && cd '$SCRIPTDIRECTORY/../build' && cmake .. && cd -'
+alias cmake_build='cd '$SCRIPTDIRECTORY/../build' && make && cd -'

@@ -1,7 +1,6 @@
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "calorimeter.h"
-#include "crystal.h"
+#include "calibrator.h"
 
 #include <iostream>
 #include <string>
@@ -42,7 +41,7 @@ int main(int argc, char* argv[])
   CfgManager config;
   config.ParseConfigFile(argv[1]);
 
-  calorimeter EB(config);
+  calibrator EB(config);
   Long64_t Nentries=EB.GetEntries();
   cout<<Nentries<<" entries"<<endl;
   const vector<float>* rechit1;
