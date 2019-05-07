@@ -37,12 +37,30 @@ class ICmanager
   void     GetPhiboundaries(Float_t &iphimin, Float_t &iphimax) {iphimin=iphimin_; iphimax=iphimax_;}
   Int_t    GetNeta() {return Neta_;}
   Int_t    GetNphi() {return Nphi_;}
+  TH2D*    GetHisto(const char* name="IC", const char* title="IC");
+  void     LoadIC(TH2D* IC);
   void     LoadIC(const std::vector<std::string> &ICcfg);
   void     InitializeIC();
-
+  //TH2D* EtaringNormalizationEB(); //TBD
+  //TH2D* EtaringNormalizationEE(); //TBD
+  //TH1D* GetICspread(); //TBD
+  //TGraphErrors* GetICspreadvsEtaEB(); //TBD
+  //TGraphErrors* GetICspreadvsEtaEE(); //TBD
+  //TGraphErrors* GetAvgICvsEtaEB();
+  //TGraphErrors* GetAvgICvsEtaEE();
+  //TGraphErrors* GetICspreadvsPhiEB(); //TBD
+  //TGraphErrors* GetICspreadvsPhiEE(); //TBD
+  //TGraphErrors* GetAvgICvsPhiEB();
+  //TGraphErrors* GetAvgICvsPhiEE();
+  //TGraphErrors* GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod );
+  //TGraphErrors* SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod );
+  //void SaveICAs(const char *output);
+  bool EB;
+  
  protected:
   struct crystal *xtal_;
   int Neta_,Nphi_,ietamin_,ietamax_,iphimin_,iphimax_;
+
 };
 
 #endif

@@ -26,6 +26,7 @@ calibrator::calibrator(CfgManager conf):
   {
     cout<<"> Set by default Eopweight to 1"<<endl;
     weight_ = new TH2F("weight","weight",1,0.,5.,1,0.,2.5);
+    weight_ -> SetDirectory(0); //in order to avoid contrast with different TFle and directories opened in the main program
     weight_->SetBinContent(1,1,1.);
   }
   
@@ -43,10 +44,8 @@ calibrator::~calibrator()
 
   if(electron_momentum_correction_)
     delete electron_momentum_correction_;
-
   if(positron_momentum_correction_)
     delete positron_momentum_correction_;
-
   if(weight_)
     delete weight_;
 }

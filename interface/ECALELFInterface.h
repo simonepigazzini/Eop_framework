@@ -30,7 +30,10 @@ class ECALELFInterface
   Long64_t GetEntries() {return chain_->GetEntries();}
   Long64_t GetEntry(const Long64_t &i);
   Bool_t   isSelected(const Int_t &i) {return selection_->EvalInstance(i);}
+  Bool_t   isEB(const Int_t &i);
   Float_t  GetEnergy(const Int_t &i);
+  Float_t  GetCharge(const Int_t &i);
+  Float_t  GetMee() {return Mee_; };
   Float_t  GetEnergyRaw(const Int_t &i);
   Int_t    GeteventNumber() {return eventNumber_;}
   Float_t  GetESEnergy(const Int_t &i);
@@ -64,14 +67,17 @@ class ECALELFInterface
   Short_t         chargeEle_[3];
   Short_t         xSeed_[3];
   Short_t         ySeed_[3];
+  Float_t         etaSCEle_[3];
+  Float_t         phiSCEle_[3];
   Float_t         etaEle_[3];
   Float_t         phiEle_[3];
   Float_t         rawEnergySCEle_[3];
   Float_t         energySCEle_[3];
-  Float_t         etaSCEle_[3];
   Float_t         esEnergySCEle_[3];
   Float_t         pAtVtxGsfEle_[3];
   Float_t         fbremEle_[3];
+  Float_t         Mee_;
+  
 
   ///! RecHit variables
   std::vector<float>   *ERecHit_[2];

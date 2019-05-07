@@ -12,7 +12,9 @@ void ECALELFInterface::BranchSelected(TChain* chain)
   chain->SetBranchAddress("phiEle",             phiEle_);
   chain->SetBranchAddress("rawEnergySCEle",     rawEnergySCEle_);
   chain->SetBranchAddress("energy_ECAL_ele",    energySCEle_); //OLD ENERGY: energySCEle_must
+  chain->SetBranchAddress("invMass_ECAL_ele",   &Mee_);
   chain->SetBranchAddress("etaSCEle",           etaSCEle_);
+  chain->SetBranchAddress("phiSCEle",           phiSCEle_);
   chain->SetBranchAddress("esEnergySCEle",      esEnergySCEle_);
   chain->SetBranchAddress("pAtVtxGsfEle",       pAtVtxGsfEle_);
   chain->SetBranchAddress("fbremEle",           fbremEle_);
@@ -106,10 +108,23 @@ Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
   return i;
 }
 
+Bool_t  ECALELFInterface::isEB(const Int_t &i)
+{
+  if(etaSCEle_[i]<1.477)
+    return true;
+  return false;
+}
+
 Float_t ECALELFInterface::GetEnergy(const Int_t &i)
 {
   return energySCEle_[i];
 }
+
+Float_t ECALELFInterface::GetCharge(const Int_t &i)
+{
+  return chargeEle_[i];
+}
+
 
 Float_t ECALELFInterface::GetEnergyRaw(const Int_t &i)
 {

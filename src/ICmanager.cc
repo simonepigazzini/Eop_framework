@@ -45,16 +45,8 @@ ICmanager::~ICmanager()
   delete [] xtal_;
 }
 
-void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
+void ICmanager::LoadIC(TH2D* ICmap)
 {
-  if(xtal_)
-    delete[] xtal_;
-  string objkey   = ICcfg[0];
-  string filename = ICcfg[1];
-  cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
-  TFile* inICfile = new TFile(filename.c_str(),"READ");
-  TH2F* ICmap = (TH2F*) inICfile->Get(objkey.c_str());
-
   Neta_=ICmap->GetNbinsY();
   ietamin_=ICmap->GetYaxis()->GetXmin();
   ietamax_=ICmap->GetYaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
@@ -62,7 +54,7 @@ void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
   iphimin_=ICmap->GetXaxis()->GetXmin();
   iphimax_=ICmap->GetXaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
   //cout<<">>> Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin_<<","<<iphimax<<"]"<<endl;
-
+  
   xtal_ = new crystal[Neta_*Nphi_];
   for(int xbin=1; xbin<Nphi_+1; ++xbin)
     for(int ybin=1; ybin<Neta_+1; ++ybin)
@@ -72,6 +64,18 @@ void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
       xtal_[index].status = 1;
     }
 
+}
+
+void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
+{
+  if(xtal_)
+    delete[] xtal_;
+  string objkey   = ICcfg[0];
+  string filename = ICcfg[1];
+  cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
+  TFile* inICfile = new TFile(filename.c_str(),"READ");
+  TH2D* ICmap = (TH2D*) inICfile->Get(objkey.c_str());
+  this->LoadIC(ICmap);
   inICfile->Close();
 }
 
@@ -98,4 +102,16 @@ Float_t  ICmanager::GetIC(const Int_t &index)
 Float_t ICmanager::GetIC(const Int_t &ieta, const Int_t &iphi)
 {
   return ( xtal_[ fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_) ] ).IC;
+}
+
+TH2D* ICmanager::GetHisto(const char* name, const char* title)
+{
+  TH2D* ICmap = new TH2D(name,title,Nphi_,iphimin_,iphimax_+1,Neta_,ietamin_,ietamax_+1);
+  for(int xbin=1; xbin<ICmap->GetNbinsX()+1; ++xbin)
+    for(int ybin=1; ybin<ICmap->GetNbinsY()+1; ++ybin)
+    {
+      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
+      ICmap->SetBinContent(xbin,ybin,this->GetIC(index));
+    }
+  return ICmap;
 }
