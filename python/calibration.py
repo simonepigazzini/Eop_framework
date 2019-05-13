@@ -17,7 +17,7 @@ print("-------------------------------------------------------------------------
 
 #parameters
 current_dir = os.getcwd();
-ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"#parent folder containing all the ntuples of interest
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/PromptReco2017_103X_updatedSCregressionV3/"#parent folder containing all the ntuples of interest
 #ntuple_dir="/home/fabio/work/Eop_framework/data/"
 tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
 #tag_list = ["Run2017C"] #tag for the monitoring
@@ -61,10 +61,10 @@ extracalibtree_filelist = []
 for root, dirs, files in os.walk(ntuple_dir):
     for file in files:
         #NOTE in the following line "DoubleEG" has to be replaced with "EGamma" for >=2018 ntuples
-        if file.endswith(".root") and file.startswith("DoubleEG") & (file.find("WSkim")!=-1 or file.find("ZSkim")!=-1): 
+        if file.endswith(".root")   and(file.startswith("DoubleEG") or file.startswith("SingleElectron"))   and(file.find("WSkim")!=-1 or file.find("ZSkim")!=-1): 
             if (any (tag in os.path.join(root, file) for tag in tag_list)):
                 if(not any (ignored_ntuples_label in os.path.join(root, file) for ignored_ntuples_label in ignored_ntuples_label_list)):
-                    if file.find("extraCalibTree-DoubleEG")==-1 :
+                    if file.find("extraCalibTree-DoubleEG")==-1 and file.find("extraCalibTree-SingleElectron")==-1:
                         selected_filelist.append(os.path.join(root, file))
                         extracalibtree_filelist.append(os.path.join(root, "extraCalibTree-"+file))
                     
@@ -156,7 +156,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                 outScript = open(outScriptName,"w")
                 outScript.write("#!/bin/bash\n")
                 #outScript.write('source setup.sh\n')
-                outScript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+                outScript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
                 outScript.write('eval `scram runtime -sh`\n');
                 outScript.write("cd -\n");
                 outScript.write("echo $PWD\n");
@@ -191,7 +191,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescriptName=job_parent_folder+"/merge_"+task+"_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
-            mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+            mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
             mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
@@ -201,7 +201,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescriptName=job_parent_folder+"/merge_"+task+"_loop_"+str(iLoop)+".sh"
             mergescript = open( mergescriptName,"w")
             mergescript.write("#!/bin/bash\n")
-            mergescript.write("cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/\n")
+            mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
             mergescript.write("hadd -f "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")

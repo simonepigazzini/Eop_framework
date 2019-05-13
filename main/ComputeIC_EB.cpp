@@ -2,9 +2,11 @@
 #include "CfgManager.h"
 #include "CfgManagerT.h"
 #include "calibrator.h"
+#include "ICmanager.h"
 
 #include <iostream>
 #include <string>
+#include "boost/multi_array.hpp"
 
 #include "TROOT.h"
 #include "TStyle.h"
@@ -23,6 +25,9 @@
 #include "TLatex.h"
 #include "TAxis.h"
 #include "TMath.h"
+
+//typedef boost::multi_array<double, 2> matrix2D;
+//typedef matrix2D::index index;
 
 using namespace std;
 
@@ -93,6 +98,7 @@ int main(int argc, char* argv[])
   EB.GetPhiboundaries(iphimin, iphimax);
   Neta=EB.GetNeta();
   Nphi=EB.GetNphi();
+  cout<<"lalala"<<ietamin<<ietamax<<iphimin<<iphimax<<endl;
 
   //define the output 
   if(outfilename == "")
@@ -100,21 +106,15 @@ int main(int argc, char* argv[])
       outfilename = config.GetOpt<string> ("Output.ComputeIC_output");
     else
       outfilename = "IC.root";
-  TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
-  TH2D* numerator = new TH2D("numerator","numerator", Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
-  TH2D* denominator = new TH2D("denominator","denominator", Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
-  TH2D* ICpull = new TH2D("ICpull","ICpull", Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
-  TH2D* temporaryIC = new TH2D("temporaryIC","temporaryIC", Nphi, iphimin, iphimax+1, Neta, ietamin, ietamax+1);
 
-  double *numerator1D = new double[Neta*Nphi];
-  double *denominator1D = new double[Neta*Nphi]; 
-  
-  //initialize numerator and denominator
-  for( int index=0; index<Neta*Nphi; ++index)
-  {
-    numerator1D[index]=0;
-    denominator1D[index]=0;
-  }
+  TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
+  cout<<"lalala"<<ietamin<<ietamax<<iphimin<<iphimax<<endl;
+  ICmanager numerator(ietamin,ietamax,iphimin,iphimax);
+  ICmanager denominator(ietamin,ietamax,iphimin,iphimax);
+
+  //Initialize numerator and denominator
+  numerator.InitIC(0.);
+  denominator.InitIC(0.);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
@@ -174,17 +174,16 @@ int main(int argc, char* argv[])
 	    continue;
 	  ieta=XRecHit->at(iRecHit);
 	  iphi=YRecHit->at(iRecHit);
-	  index = fromIetaIphito1Dindex(ieta, iphi, Neta, Nphi, ietamin, iphimin);
-	  IC=EB.GetIC(index);
+	  IC=EB.GetIC(ieta,iphi);
 	  //cout<<"entry="<<ientry<<endl;
 	  //cout<<"ieta="<<ieta<<"\tiphi="<<iphi<<"\tindex="<<index<<"\tIC="<<IC<<endl;
 	  //cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<endl;
 	  //cout<<"regression="<<regression<<"\tE="<<E<<"\tp="<<p<<"\tweight="<<weight<<endl;
 	  //if(E>15. && p>15.)
 	  {
-	    numerator1D[index]   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	    denominator1D[index] += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
-	    //cout<<"numerator="<<numerator1D[index]<<"\tdenominator="<<denominator1D[index]<<endl;
+	    numerator(ieta,iphi)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	    denominator(ieta,iphi) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	    //cout<<"numerator="<<numerator[index]<<"\tdenominator="<<denominator[index]<<endl;
 	    //if(ieta>70) getchar();
 	  }
 
@@ -195,27 +194,20 @@ int main(int argc, char* argv[])
     }
   }	  
 
-  //fill numerator and denominator histos
-  for(int xbin=1; xbin<numerator->GetNbinsX()+1; ++xbin)
-    for(int ybin=1; ybin<numerator->GetNbinsY()+1; ++ybin)
-    {
-      index = fromTH2indexto1Dindex(xbin, ybin, Nphi, Neta);
-      numerator->SetBinContent(xbin,ybin,numerator1D[index]);
-      denominator->SetBinContent(xbin,ybin,denominator1D[index]);
-      if (denominator1D[index]!=0)
-      {
-	ICpull->SetBinContent(xbin,ybin,numerator1D[index]/denominator1D[index]);	
-	temporaryIC->SetBinContent(xbin,ybin, EB.GetIC(index) * numerator1D[index]/denominator1D[index]);	
-      }
-    }
+  //get numerator and denominator histos
+  TH2D* h2_numerator = numerator.GetHisto("numerator","numerator");
+  TH2D* h2_denominator = denominator.GetHisto("denominator","denominator");
 
+  //compute temporary IC-pull and IC-values 
+  TH2D* h2_ICpull = GetICpull(h2_numerator,h2_denominator);
+  TH2D* h2_temporaryIC = EB.GetPulledIC(h2_ICpull);
 
   //save and close
   outFile->cd();
-  numerator->Write();
-  denominator->Write();
-  ICpull->Write();
-  temporaryIC->Write();
+  h2_numerator->Write();
+  h2_denominator->Write();
+  h2_ICpull->Write();
+  h2_temporaryIC->Write();
   outFile->Close();
   return 0;
 }

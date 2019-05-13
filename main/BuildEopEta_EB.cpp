@@ -113,9 +113,10 @@ int main(int argc, char* argv[])
   //for debug set the binwidth equal to the previous calibration code
   float eop_binwidth = (1.9-0.2)/100;
   int Neop_bins = (int)(2*Eopweightrange / eop_binwidth);
-  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, 100, 0.2, 1.9);
+  //TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, 100, 0.2, 1.9);
+
   /////////////////////////////////////////////////////
-  //TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
+  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();

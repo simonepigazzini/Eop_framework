@@ -140,6 +140,8 @@ int main(int argc, char** argv)
       h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron );
   }
 
+  NEWLINE;
+
   // initialize TGraphs
   TGraphErrors* g_PositronCorrection_vs_phi = new TGraphErrors();
   g_PositronCorrection_vs_phi->SetName("positron_correction");
@@ -166,7 +168,7 @@ int main(int argc, char** argv)
   int Nbadfits=0;
   for(int phibin = 1; phibin <= nPhiBins; ++phibin)
   {
-    cout<<"bin"<<phibin<<endl;
+    cout<<"Fit progress "<<100*phibin/nPhiBins<<"\%  \r"<<flush;
     float phi = h_Mee_PPositron->GetXaxis()->GetBinCenter(phibin);
 
     // define the histograms to be fitted
@@ -195,15 +197,13 @@ int main(int argc, char** argv)
     fitfunc_Mee_PElectron.back() -> FixParameter(0, Norm_Mee_PElectron);
     fitfunc_Mee_PElectron.back() -> FixParameter(2, 0.);
 
-    cout << "***** Fitting MC EB " << phibin << endl;
-
     //fit positron correction
-    cout << "***** Positron ";
+    //cout << "***** Positron ";
     bool goodFit = PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), 10);
     if(goodFit)
     {
       ++Ngoodfits;
-      cout << "fit OK    ";
+      //cout << "fit OK    ";
       double k = fitfunc_Mee_PPositron.back()->GetParameter(1);
       double eee = fitfunc_Mee_PPositron.back()->GetParError(1);
       g_PositronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1./k);
@@ -212,19 +212,19 @@ int main(int argc, char** argv)
     else
     {
       Nbadfits;
-      cout << "fit BAD   ";
+      //cout << "fit BAD   ";
       g_PositronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1.);
       g_PositronCorrection_vs_phi -> SetPointError(phibin-1, 0., 0.01);
     }
-    NEWLINE;
+    //NEWLINE;
 
     //fit electron correction
-    cout << "***** Electron ";
+    //cout << "***** Electron ";
     goodFit = PerseverantFit( h_Mee_PElectron_phibin.back(), fitfunc_Mee_PElectron.back(), 10);
     if(goodFit)
     {
       ++Ngoodfits;
-      cout << "fit OK    ";
+      //cout << "fit OK    ";
       double k = fitfunc_Mee_PElectron.back()->GetParameter(1);
       double eee = fitfunc_Mee_PElectron.back()->GetParError(1);
       g_ElectronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1./k);
@@ -233,13 +233,14 @@ int main(int argc, char** argv)
     else
     {
       ++Nbadfits;
-      cout << "fit BAD   ";
+      //cout << "fit BAD   ";
       g_ElectronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1.);
       g_ElectronCorrection_vs_phi -> SetPointError(phibin-1, 0., 0.01);
     }
-    NEWLINE;
+    //NEWLINE;
   }
 
+  NEWLINE;
   cout<<"Fit summary:"<<endl;
   cout<<"\t"<<Ngoodfits<<" GOOD fits"<<endl;
   cout<<"\t"<<Nbadfits<<" BAD fits"<<endl;
