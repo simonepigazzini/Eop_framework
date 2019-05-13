@@ -26,9 +26,6 @@
 #include "TAxis.h"
 #include "TMath.h"
 
-//typedef boost::multi_array<double, 2> matrix2D;
-//typedef matrix2D::index index;
-
 using namespace std;
 
 void PrintUsage()
@@ -98,7 +95,6 @@ int main(int argc, char* argv[])
   EB.GetPhiboundaries(iphimin, iphimax);
   Neta=EB.GetNeta();
   Nphi=EB.GetNphi();
-  cout<<"lalala"<<ietamin<<ietamax<<iphimin<<iphimax<<endl;
 
   //define the output 
   if(outfilename == "")
@@ -108,7 +104,6 @@ int main(int argc, char* argv[])
       outfilename = "IC.root";
 
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
-  cout<<"lalala"<<ietamin<<ietamax<<iphimin<<iphimax<<endl;
   ICmanager numerator(ietamin,ietamax,iphimin,iphimax);
   ICmanager denominator(ietamin,ietamax,iphimin,iphimax);
 
