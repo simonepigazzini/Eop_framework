@@ -16,7 +16,7 @@
 
 struct crystal
 {
-  float IC;
+  double IC;
   int status;
 };
 
@@ -31,16 +31,18 @@ class ICmanager
   //---dtor---
   ~ICmanager();
   //---utils--
-  Float_t  GetIC(const Int_t &index);
   Float_t  GetIC(const Int_t &ieta, const Int_t &iphi);
-  void     GetEtaboundaries(Float_t &ietamin, Float_t &ietamax) {ietamin=ietamin_; ietamax_=ietamax_;}
+  void     GetEtaboundaries(Float_t &ietamin, Float_t &ietamax) {ietamin=ietamin_; ietamax=ietamax_;}
   void     GetPhiboundaries(Float_t &iphimin, Float_t &iphimax) {iphimin=iphimin_; iphimax=iphimax_;}
   Int_t    GetNeta() {return Neta_;}
   Int_t    GetNphi() {return Nphi_;}
   TH2D*    GetHisto(const char* name="IC", const char* title="IC");
   void     LoadIC(TH2D* IC);
   void     LoadIC(const std::vector<std::string> &ICcfg);
-  void     InitializeIC();
+  void     InitIC(Int_t ICvalue);
+  double&  operator()(const Int_t &ieta, const Int_t &iphi);
+  TH2D*    GetPulledIC(TH2D* h2_ICpull);
+  TH2D*    PullIC(TH2D* h2_ICpull);
   //TH2D* EtaringNormalizationEB(); //TBD
   //TH2D* EtaringNormalizationEE(); //TBD
   //TH1D* GetICspread(); //TBD
@@ -61,6 +63,12 @@ class ICmanager
   struct crystal *xtal_;
   int Neta_,Nphi_,ietamin_,ietamax_,iphimin_,iphimax_;
 
+ private:
+  Float_t  GetIC(const Int_t &index);
+  void     CreateIC();
+
 };
+
+TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator);
 
 #endif
