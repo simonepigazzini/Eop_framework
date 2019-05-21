@@ -197,6 +197,9 @@ int main(int argc, char* argv[])
   TH2D* h2_ICpull = GetICpull(h2_numerator,h2_denominator);
   TH2D* h2_temporaryIC = EB.GetPulledIC(h2_ICpull);
 
+  h2_temporaryIC->SetName("temporaryIC");
+  h2_temporaryIC->SetTitle("temporaryIC");
+
   //save and close
   outFile->cd();
   h2_numerator->Write();

@@ -27,11 +27,11 @@ using namespace std;
 
 void PrintUsage()
 {
-  cerr << ">>>>> usage:  BuildEopEta_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweight <objtype> <objname> <filename> --Eopweightrange <weightrange> --BuildEopEta_output <outputFileName> --odd[or --even]" << endl;
+  cerr << ">>>>> usage:  BuildEopEta_EB --cfg <configFileName> --inputIC <objname> <filename> --Eopweightrange <weightrangemin> <weightrangemax> --Eopweightbins <Nbins> --BuildEopEta_output <outputFileName> --odd[or --even]" << endl;
   cerr << "               " <<            " --cfg                MANDATORY"<<endl;
   cerr << "               " <<            " --inputIC            OPTIONAL, can be also provided in the cfg"<<endl;
-  cerr << "               " <<            " --Eopweight          OPTIONAL, can be also provided in the cfg" <<endl;
   cerr << "               " <<            " --Eopweightrange     OPTIONAL, can be also provided in the cfg" <<endl; 
+  cerr << "               " <<            " --Eopweightbins      OPTIONAL, can be also provided in the cfg" <<endl; 
   cerr << "               " <<            " --BuildEopEta_output OPTIONAL, can be also provided in the cfg" <<endl;
   cerr << "               " <<            " --odd[or --even]     OPTIONAL" <<endl;
 }
@@ -40,10 +40,11 @@ int main(int argc, char* argv[])
 {
   string cfgfilename="";
   vector<string> ICcfg;
-  vector<string> weightcfg;
+  float Eopweightmin=-1;
+  float Eopweightmax=-1;
+  int   Eopweightbins=-1;
   string outfilename="";
   string splitstat="";
-  float Eopweightrange = 0.;
 
   //Parse the input options
   for(int iarg=1; iarg<argc; ++iarg)
@@ -55,14 +56,15 @@ int main(int argc, char* argv[])
       ICcfg.push_back(argv[iarg+1]);
       ICcfg.push_back(argv[iarg+2]);
     }
-    if(string(argv[iarg])=="--Eopweight")
-    {
-      weightcfg.push_back(argv[iarg+1]);
-      weightcfg.push_back(argv[iarg+2]);
-      weightcfg.push_back(argv[iarg+3]);
-    }
+
     if(string(argv[iarg])=="--Eopweightrange")
-      Eopweightrange=atof(argv[iarg+1]);
+    {
+      Eopweightmin=atof(argv[iarg+1]);
+      Eopweightmax=atof(argv[iarg+2]);
+    }
+    if(string(argv[iarg])=="--Eopweightbins")
+      Eopweightbins=atoi(argv[iarg+1]);
+
     if(string(argv[iarg])=="--BuildEopEta_output")
       outfilename=argv[iarg+1];
     if(string(argv[iarg])=="--odd")
@@ -85,8 +87,6 @@ int main(int argc, char* argv[])
   calibrator EB(config);
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
-  if(weightcfg.size()>0)
-    EB.LoadEopWeight(weightcfg);
   if(ICcfg.size()>0)
     EB.LoadIC(ICcfg);
 
@@ -100,23 +100,32 @@ int main(int argc, char* argv[])
 
 
   //define the range for the E/p weight histogram 
-  if(Eopweightrange==0.)
+  if(Eopweightmin==-1 || Eopweightmax==-1)
     if(config.OptExist("Input.Eopweightrange"))
-      Eopweightrange = config.GetOpt<float> ("Input.Eopweightrange");
+    {
+      vector<float> Eopweightrange = config.GetOpt<vector<float> >("Input.Eopweightrange");
+      Eopweightmin=Eopweightrange.at(0);
+      Eopweightmax=Eopweightrange.at(1);
+    }
     else
     {
       cout<<"[WARNING]: no Eopweightrange setting provided --> use default value"<<endl; 
-      Eopweightrange = 0.8;
+      Eopweightmin = 0.2;
+      Eopweightmax = 1.9;
     }
-  cout<<"> Set Eop range from "<<1.-Eopweightrange<<" to "<<1.+Eopweightrange<<endl;
-  /////////////////////////////////////////////////////
-  //for debug set the binwidth equal to the previous calibration code
-  float eop_binwidth = (1.9-0.2)/100;
-  int Neop_bins = (int)(2*Eopweightrange / eop_binwidth);
-  //TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, 100, 0.2, 1.9);
 
-  /////////////////////////////////////////////////////
-  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Neop_bins, 1.-Eopweightrange, 1.+Eopweightrange);
+  if(Eopweightbins==-1)
+    if(config.OptExist("Input.Eopweightbins"))
+      Eopweightbins=config.GetOpt<int>("Input.Eopweightbins");
+    else
+    {
+      cout<<"[WARNING]: no Eopweightbins setting provided --> use default value"<<endl; 
+      Eopweightbins=100;
+    }
+  
+  cout<<"> Set Eop range from "<<Eopweightmin<<" to "<<Eopweightmax<<" in "<<Eopweightbins<<" bins"<<endl;
+
+  TH2F* Eop_vs_Eta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Eopweightbins, Eopweightmin, Eopweightmax);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=EB.GetEntries();
@@ -183,6 +192,7 @@ int main(int argc, char* argv[])
   
   /////////////////////////////////////////////////////
   //template to be removed
+  /*
   TH1D* Eop_projection_test=Eop_vs_Eta->ProjectionY("_py",1,1,"");
   for(int i=0; i<Eop_projection_test->GetNbinsX()+2; ++i)
   {
@@ -193,6 +203,7 @@ int main(int argc, char* argv[])
   {
     cout<<i<<"\t"<<Eop_projection_test->GetBinContent(i)<<endl;
   }
+  */
   /////////////////////////////////////////////////////
   
 
@@ -202,31 +213,35 @@ int main(int argc, char* argv[])
   for(int ieta=1 ; ieta<Eop_vs_Eta->GetNbinsX()+1 ; ++ieta)
   {
     Eop_projection=Eop_vs_Eta->ProjectionY("_py",ieta,ieta,"");
+    int Nbins=Eop_projection->GetNbinsX();
     int Nev = Eop_projection->/*GetEntries();*/Integral(0,-1);//integral including underflow and overflow
     cout<<"index"<<ieta-1<<endl;
     cout<<"entries="<<Eop_projection->GetEntries()<<endl;
     cout<<"integral="<<Eop_projection->Integral()<<endl;
     cout<<"integral with overunderflow="<<Eop_projection->Integral(0,-1)<<endl;
+    cout<<"integral with overunderflowV2="<<Eop_projection->Integral(0,Nbins+1)<<endl;
     if(Nev==0)
       cout<<"[WARNING]: Nev=0 for eta bin "<<ieta<<endl;
     //Eop_projection->Scale(1./Nev);
     //cout<<Nev<<endl;
-    for(int iEop=1 ; iEop<Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)
+    for(int iEop=0 ; iEop<=Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)
     {
       float Eop = Eop_vs_Eta->GetBinContent(ieta,iEop);
       Eop_vs_Eta->SetBinContent(ieta,iEop,Eop/Nev);
       //Eop_projection->GetBinContent(iEop);
       //Eop_vs_Eta->SetBinContent(ieta,iEop,Eop_projection->GetBinContent(iEop));
     }
+    cout<<"afternorm integral with overunderflow="<<Eop_vs_Eta->ProjectionY("_py",ieta,ieta,"")->Integral(0,-1)<<endl;
   }
 
+  /*
   //set underflow and overflow to 0
   for(int ieta=1 ; ieta<Eop_vs_Eta->GetNbinsX()+1 ; ++ieta)
   {
     Eop_vs_Eta->SetBinContent(ieta,0.,0);//underflow
     Eop_vs_Eta->SetBinContent(ieta, Eop_vs_Eta->GetNbinsY()+1 ,0);//overflow
   }
-  
+  */
   //save and close
   Eop_vs_Eta->Write();
   outFile->Close();
