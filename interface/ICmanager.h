@@ -13,6 +13,7 @@
 #include "TH2F.h"
 #include "TFile.h"
 #include "TObject.h"
+#include "TF1.h"
 
 struct crystal
 {
@@ -43,19 +44,24 @@ class ICmanager
   double&  operator()(const Int_t &ieta, const Int_t &iphi);
   TH2D*    GetPulledIC(TH2D* h2_ICpull);
   TH2D*    PullIC(TH2D* h2_ICpull);
-  //TH2D* EtaringNormalizationEB(); //TBD
+  void     EtaringNormalizationEB();
   //TH2D* EtaringNormalizationEE(); //TBD
-  //TH1D* GetICspread(); //TBD
-  //TGraphErrors* GetICspreadvsEtaEB(); //TBD
+  TH1D*    GetICspread(int nBins_spread = 2000, float spreadMin = 0., float spreadMax = 2.);
+  TGraphErrors* GetICspreadvsEtaEB(int nBins_spread = 2000, float spreadMin = 0., float spreadMax = 2.);
   //TGraphErrors* GetICspreadvsEtaEE(); //TBD
-  //TGraphErrors* GetAvgICvsEtaEB();
+  TGraphErrors* GetAvgICvsEtaEB();
   //TGraphErrors* GetAvgICvsEtaEE();
-  //TGraphErrors* GetICspreadvsPhiEB(); //TBD
+  TGraphErrors* GetICspreadvsPhiEB(int nBins_spread = 2000, float spreadMin = 0., float spreadMax = 2.);
   //TGraphErrors* GetICspreadvsPhiEE(); //TBD
-  //TGraphErrors* GetAvgICvsPhiEB();
+  TGraphErrors* GetAvgICvsPhiEB();
   //TGraphErrors* GetAvgICvsPhiEE();
-  //TGraphErrors* GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod );
-  //TGraphErrors* SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod );
+  TGraphErrors* GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod );
+  void SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod );
+  //TH2D* GetStatPrec(ICmanager* IC2);//TBD
+  //TH2D* GetStatPrecvsEtaringEB(ICmanager* IC2);//TBD
+  //TH2D* GetStatPrecvsEtaringEE(ICmanager* IC2);//TBD
+  //TH2D* GetResidualSpreadvsEtaringEB(ICmanager* IC2);//TBD
+  //TH2D* GetResidualSpreadvsEtaringEE(ICmanager* IC2);//TBD
   //void SaveICAs(const char *output);
   bool EB;
   
@@ -70,5 +76,12 @@ class ICmanager
 };
 
 TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator);
+
+
+
+int  fromIetaIphito1Dindex(const int &ieta,  const int &iphi, const int &Neta,  const int &Nphi,  const int &ietamin, const int &iphimin);
+int  fromTH2indexto1Dindex(const int &binx,  const int &biny, const int &Nbinx, const int &Nbiny);
+void from1DindextoIetaIphi(const int &index,       int &ieta,       int &iphi,  const int &Neta,  const int &Nphi,    const int &ietamin, const int &iphimin);
+void from1DindextoTH2index(const int &index,       int &binx,       int &biny,  const int &Nbinx, const int &Nbiny);
 
 #endif

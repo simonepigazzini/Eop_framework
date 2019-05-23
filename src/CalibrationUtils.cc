@@ -737,7 +737,7 @@ void PhiFoldProfile_EB(TGraphErrors* g_avgIC_vsPhiFold_EBM, TGraphErrors* g_avgI
                        TH2F* hcmap)
 {
 	// define the number of phi regions
-	int nPhiRegions = 20 / phiRegionWidth;
+  int nPhiRegions = 20 / phiRegionWidth;
 	if( 20 % phiRegionWidth > 0 ) nPhiRegions += 1;
 
 	std::vector<TH1F*> h_IC_vsPhiFold_EBM(nPhiRegions);

@@ -1,5 +1,5 @@
 #include "ICmanager.h"
-#include "utils.h"
+//#include "utils.h"
 
 using namespace std;
 
@@ -171,6 +171,255 @@ TH2D* ICmanager::PullIC(TH2D* h2_ICpull)
   return pulledIC;
 }
 
+void ICmanager::EtaringNormalizationEB()
+{
+  cout<<"ICmanager::EtaringNormalizationEB still to be validated"<<endl;
+  TGraphErrors* avgIC_vs_iEta = this->GetAvgICvsEtaEB();
+
+  for(int ieta = ietamin_; ieta <= ietamax_; ++ieta)
+  {
+    double avgIC = avgIC_vs_iEta->Eval(1.*ieta);
+    // normalize IC skipping bad channels and bad TTs
+    for(int iphi = iphimin_; iphi <= iphimax_ ; ++iphi)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      if( avgIC<0 ) continue;
+      xtal_[index1D].IC /= avgIC;
+    }
+  }
+  delete avgIC_vs_iEta;
+}
+
+TH1D* ICmanager::GetICspread( int nBins_spread, float spreadMin, float spreadMax)
+{
+  cout<<"ICmanager::GetICspread still to be validated"<<endl;
+  TH1D* h_ICspread = new TH1D("ICspread","ICspread",nBins_spread,spreadMin,spreadMax);
+  for(int ieta = ietamin_; ieta <= ietamax_; ++ieta)
+  {
+    for(int iphi = iphimin_; iphi <= iphimax_ ; ++iphi)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      h_ICspread->Fill(xtal_[index1D].IC);
+    }
+  }
+  return h_ICspread;
+}
+
+TGraphErrors* ICmanager::GetICspreadvsEtaEB(int nBins_spread, float spreadMin, float spreadMax)
+{
+  cout<<"ICmanager::GetICspreadvsEtaEB still to be validated"<<endl;
+  TGraphErrors* g_ICspread_vs_iEta = new TGraphErrors();
+  g_ICspread_vs_iEta->SetName("ICspread_vs_iEta");
+  g_ICspread_vs_iEta->SetTitle("ICspread_vs_iEta");
+  map<int,TH1F*> h_ICspread_vs_iEta;
+
+  //Fill IC histos 
+  for(int ieta = ietamax_; ieta >= ietamin_; --ieta)
+  {
+    if(ieta>0)
+      h_ICspread_vs_iEta[ieta] = new TH1F(Form("h_ICspread_ieta%i",ieta),Form("h_ICspread_ieta%i",ieta),nBins_spread,spreadMin,spreadMax);
+    for(int iphi = iphimin_; iphi <= iphimax_ ; ++iphi)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      h_ICspread_vs_iEta[abs(ieta)]->Fill(xtal_[index1D].IC);
+    }
+  }
+
+  //Fit IC histos and fill the graph
+  TF1 fitfunc("fitfunc","gaus",spreadMin,spreadMax);
+  for(int ieta = 1; ieta <= ietamax_; ++ieta)
+  {
+    double mean = h_ICspread_vs_iEta[ieta]->GetMean();
+    double rms  = h_ICspread_vs_iEta[ieta]->GetRMS();
+    fitfunc.SetParameter(1, mean);
+    fitfunc.SetParameter(2, rms);
+    h_ICspread_vs_iEta[ieta] -> Fit("fitfunc", "NQL", "", mean-3*rms, mean+3*rms);
+    g_ICspread_vs_iEta -> SetPoint(ieta, ieta, fitfunc.GetParameter(2));
+    g_ICspread_vs_iEta -> SetPointError(ieta, 0.5, fitfunc.GetParError(2));
+  }
+  
+  for(auto h : h_ICspread_vs_iEta)
+    if(h.second)
+      delete h.second;
+
+  return g_ICspread_vs_iEta;
+
+}
+
+TGraphErrors* ICmanager::GetAvgICvsEtaEB()
+{
+  cout<<"ICmanager::GetAvgICvsEtaEB still to be validated"<<endl;
+  TGraphErrors* avgIC_vs_iEta = new TGraphErrors();
+  avgIC_vs_iEta->SetName("avgIC_vs_iEta");
+  avgIC_vs_iEta->SetTitle("avgIC_vs_iEta");
+  
+  for(int ieta = ietamin_; ieta <= ietamax_; ++ieta)
+  {
+    float sumIC = 0.;
+    int numIC = 0;
+    
+    // mean over phi corrected skipping dead channel
+    for(int iphi = iphimin_; iphi <= iphimax_ ; ++iphi)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      if(xtal_[index1D].status == 1)
+      {
+	sumIC += xtal_[index1D].IC;
+	++numIC;
+      }
+      if(numIC!=0)
+	avgIC_vs_iEta->SetPoint(ieta-ietamin_, ieta, sumIC/numIC);
+      else
+	avgIC_vs_iEta->SetPoint(ieta-ietamin_, ieta, 0.);
+    }
+  }
+
+  return avgIC_vs_iEta;
+}
+
+
+TGraphErrors* ICmanager::GetICspreadvsPhiEB(int nBins_spread, float spreadMin, float spreadMax)
+{
+
+  cout<<"ICmanager::GetICspreadvsPhiEB still to be validated"<<endl;
+  TGraphErrors* g_ICspread_vs_iphi = new TGraphErrors();
+  g_ICspread_vs_iphi->SetName("ICspread_vs_iphi");
+  g_ICspread_vs_iphi->SetTitle("ICspread_vs_iphi");
+  map<int,TH1F*> h_ICspread_vs_iphi;
+
+  //Fill IC histos 
+  for(int iphi = iphimin_; iphi <= iphimin_; ++iphi)
+  {
+    h_ICspread_vs_iphi[iphi] = new TH1F(Form("h_ICspread_iphi%i",iphi),Form("h_ICspread_iphi%i",iphi),nBins_spread,spreadMin,spreadMax);
+    for(int ieta = ietamin_; ieta <= ietamax_ ; ++ieta)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      h_ICspread_vs_iphi[iphi]->Fill(xtal_[index1D].IC);
+    }
+  }
+
+  //Fit IC histos and fill the graph
+  TF1 fitfunc("fitfunc","gaus",spreadMin,spreadMax);
+  for(int iphi = iphimin_; iphi <= iphimin_; ++iphi)
+  {
+    double mean = h_ICspread_vs_iphi[iphi]->GetMean();
+    double rms  = h_ICspread_vs_iphi[iphi]->GetRMS();
+    fitfunc.SetParameter(1, mean);
+    fitfunc.SetParameter(2, rms);
+    h_ICspread_vs_iphi[iphi] -> Fit("fitfunc", "NQL", "", mean-3*rms, mean+3*rms);
+    g_ICspread_vs_iphi -> SetPoint(iphi-iphimin_, iphi, fitfunc.GetParameter(2));
+    g_ICspread_vs_iphi -> SetPointError(iphi-iphimin_, 0.5, fitfunc.GetParError(2));
+  }
+  
+  for(auto h : h_ICspread_vs_iphi)
+    if(h.second)
+      delete h.second;
+
+  return g_ICspread_vs_iphi;
+}
+
+TGraphErrors* ICmanager::GetAvgICvsPhiEB()
+{
+  cout<<"ICmanager::GetAvgICvsPhiEB still to be validated"<<endl;
+  TGraphErrors* avgIC_vs_iPhi = new TGraphErrors();
+  avgIC_vs_iPhi->SetName("avgIC_vs_iPhi");
+  avgIC_vs_iPhi->SetTitle("avgIC_vs_iPhi");
+  
+  for(int iphi = iphimin_; iphi <= iphimax_; ++iphi)
+  {
+    float sumIC = 0.;
+    int numIC = 0;
+    
+    // mean over eta corrected skipping dead channel
+    for(int ieta = ietamin_; ieta <= ietamax_ ; ++ieta)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      if(xtal_[index1D].status == 1)
+      {
+	sumIC += xtal_[index1D].IC;
+	++numIC;
+      }
+      if(numIC!=0)
+	avgIC_vs_iPhi->SetPoint(iphi-iphimin_, iphi, sumIC/numIC);
+      else
+	avgIC_vs_iPhi->SetPoint(iphi-iphimin_, iphi, 0.);
+    }
+  }
+
+  return avgIC_vs_iPhi;
+}
+
+TGraphErrors* ICmanager::GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod )
+{
+  cout<<"ICmanager::GetPhiFoldProfileEB still to be validated"<<endl;
+  //checks on the inputs
+  if(ietamin<ietamin_)
+  {
+    cout<<"[ERROR]: provided ietamin is lower than "<<ietamin_<<endl;
+    return 0;
+  }
+  if(ietamax>ietamax_)
+  {
+    cout<<"[ERROR]: provided ietamax is higher than "<<ietamax_<<endl;
+    return 0;
+  }
+
+  TGraphErrors* g_avgIC_vsPhiFold = new TGraphErrors();
+  g_avgIC_vsPhiFold->SetName("g_avgIC_vsPhiFold");
+  g_avgIC_vsPhiFold->SetTitle("g_avgIC_vsPhiFold");
+    
+  // define one histo per phi-region
+  map<int,TH1F*> h_IC_vsPhiFold;
+  for(int iregion=0; iregion<PhiPeriod; ++iregion)
+    h_IC_vsPhiFold[iregion] = new TH1F(Form("h_IC_vsPhiFold_iregion%i",iregion),Form("h_IC_vsPhiFold_iregion%i",iregion),1000,0.,2.);
+
+  // fill the histos
+  for(int iphi=iphimin_; iphi<=iphimax_; ++iphi)
+  {
+    int iregion = (iphi-iphimin_) % PhiPeriod;
+    for(int ieta=ietamin; ieta<=ietamax; ++ieta)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      if(xtal_[index1D].status == 1)
+	h_IC_vsPhiFold[iregion] -> Fill(xtal_[index1D].IC);
+    }
+  }
+
+  //Fill the graph
+  for(int iregion=0; iregion<PhiPeriod; ++iregion)
+  {
+    g_avgIC_vsPhiFold -> SetPoint(iregion, iregion, h_IC_vsPhiFold[iregion]->GetMean());
+    g_avgIC_vsPhiFold -> SetPointError(iregion, 0.5, h_IC_vsPhiFold[iregion]->GetMeanError());
+  }
+
+  //delete histos
+  for(auto h : h_IC_vsPhiFold)
+    if(h.second)
+      delete h.second;
+  
+  return g_avgIC_vsPhiFold;
+}
+
+void ICmanager::SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod)
+{
+  TGraphErrors* g_avgIC_vsPhiFold = this->GetPhiFoldProfileEB(ietamin,ietamax,PhiPeriod);
+  //i don't want to bias the avg IC value
+  double foldedICmean = TMath::Mean(g_avgIC_vsPhiFold->GetN(), g_avgIC_vsPhiFold->GetY(), NULL);
+
+  // rescale the ICs
+  for(int iphi=iphimin_; iphi<=iphimax_; ++iphi)
+  {
+    int iregion = (iphi-iphimin_) % PhiPeriod;
+    for(int ieta=ietamin; ieta<=ietamax; ++ieta)
+    {
+      int index1D = fromIetaIphito1Dindex(ieta, iphi, Neta_, Nphi_, ietamin_, iphimin_);
+      xtal_[index1D].IC *= foldedICmean/g_avgIC_vsPhiFold->Eval(1.*iregion);
+    }
+  }
+  
+  delete g_avgIC_vsPhiFold;
+}
+
 TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator)
 {
   if(h2_numerator->GetNbinsX() != h2_denominator->GetNbinsX() ||
@@ -204,3 +453,44 @@ TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator)
   return ICpull;
 }
 
+//INDEXING UTILS!!!!
+//there are the 4 different reference frames in usage, taking the barrel as example
+
+//0 CMS reference system eta, phi
+
+//1  ECALELF reference
+//   XSeedSCEle=ieta in [-85,85] with 0 excluded for a total of 171 bins
+//   YSeedSCEle=iphi in [1,360] for a total of 360 values
+
+//2  TH2 bin numbering: for hystorical reasons phi is on the x-axis 
+//   binx in [1,360] for a total of 360 bins --> actually the range is [1,361] because one has to account for the width of the last bin  
+//   biny in [-85,85] for a total of 171 bins --> actually the range is [-85,86] because one has to account for the width of the last bin
+
+//3  ix, iy auxiliary reference system 
+//   ix in [0,359] for a total of 360 bins
+//   iy in [0,170] for a total of 171 bins
+
+//4  1-D index
+//   360*171 bins
+
+int fromIetaIphito1Dindex(const int &ieta, const int &iphi, const int &Neta, const int &Nphi, const int &ietamin, const int &iphimin)
+{
+  return (iphi - iphimin)+Nphi*(ieta - ietamin);
+}
+
+int fromTH2indexto1Dindex(const int &binx, const int &biny, const int &Nbinx, const int &Nbiny)
+{
+  return (binx - 1)+Nbinx*(biny - 1);
+}
+
+void from1DindextoIetaIphi(const int &index, int &ieta, int &iphi, const int &Neta, const int &Nphi, const int &ietamin, const int &iphimin)
+{
+  iphi = index % Nphi+iphimin;
+  ieta = index / Nphi+ietamin;
+}
+
+void from1DindextoTH2index(const int &index, int &binx, int &biny, const int &Nbinx, const int &Nbiny)
+{
+  binx = index % Nbinx+1;
+  biny = index / Nbinx+1;
+}

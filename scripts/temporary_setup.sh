@@ -1,7 +1,9 @@
 #!/bin/bash
 SCRIPTDIRECTORY=$(cd `dirname ${BASH_SOURCE[0]}` && pwd)
+BASEDIRECTORY=$SCRIPTDIRECTORY/..
 echo 'script directory:' $SCRIPTDIRECTORY
-if [[ $SCRIPTDIRECTORY == /afs/* ]];
+echo 'base directory:  ' $BASEDIRECTORY
+if [[ $BASEDIRECTORY == /afs/* ]];
 then
     cd /afs/cern.ch/user/f/fmonti/work/flashggNew/CMSSW_10_5_0/src/
     #cd /afs/cern.ch/user/f/fmonti/work/EoP_harness/CMSSW_10_1_2/src/
@@ -9,6 +11,6 @@ then
     cd -
 fi
 
-alias cmake_clean='rm -r '$SCRIPTDIRECTORY/../build/*
-alias cmake_reset='rm -r '$SCRIPTDIRECTORY/../build/*' && cd '$SCRIPTDIRECTORY/../build' && cmake .. && cd -'
-alias cmake_build='cd '$SCRIPTDIRECTORY/../build' && make && cd -'
+alias cmake_clean='rm -r '$BASEDIRECTORY/build/*
+alias cmake_reset='rm -r '$BASEDIRECTORY/build/*'; cd '$BASEDIRECTORY/build'; cmake ..; cd -'
+alias cmake_build='cd '$BASEDIRECTORY/build'; make; cd -'
