@@ -420,6 +420,32 @@ void ICmanager::SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeri
   delete g_avgIC_vsPhiFold;
 }
 
+TH2D* ICmanager::GetStatPrec(ICmanager* IC2)
+{
+  //safety controls
+  if(Neta_!=IC2->Neta_ || Nphi_!=IC2->Nphi_ || ietamin_!=IC2->ietamin_ || ietamax_!=IC2->ietamax_ || iphimin_!=IC2->iphimin_ || iphimax_!=IC2->iphimax_)
+  {
+    cout<<"[ERROR]::GetStatPrec incompatible ICs"<<endl;
+    return 0;
+  }
+
+  TH2D* StatPrec = new TH2D("StatisticPrecision","Statistic Precision",Nphi_,iphimin_,iphimax_+1,Neta_,ietamin_,ietamax_+1);
+  for(int xbin=1; xbin<StatPrec->GetNbinsX()+1; ++xbin)
+    for(int ybin=1; ybin<StatPrec->GetNbinsY()+1; ++ybin)
+    {
+      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
+      double ICvalue1 = xtal_[index].IC;
+      double ICvalue2 = IC2->xtal_[index].IC;
+      if(xtal_[index].status==1 && IC2->xtal_[index].status==1 && ICvalue1!=0 && ICvalue2!=0)
+	StatPrec->SetBinContent(xbin, ybin, (ICvalue1-ICvalue2)/(ICvalue1+ICvalue2) );
+      else
+	StatPrec->SetBinContent(xbin, ybin, 0.);
+    }
+
+  return StatPrec;
+
+}
+
 TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator)
 {
   if(h2_numerator->GetNbinsX() != h2_denominator->GetNbinsX() ||

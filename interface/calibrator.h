@@ -28,10 +28,10 @@ class calibrator: public ICmanager, public ECALELFInterface
   //---dtor---
   ~calibrator();
   //---utils--
-  Float_t  GetPcorrected(const Int_t &i);
-  Float_t  GetICEnergy(const Int_t &i);
+  virtual Float_t  GetPcorrected(const Int_t &i)=0;
+  virtual Float_t  GetICEnergy(const Int_t &i)=0;
   Float_t  GetWeight(const Float_t &Eop,const Float_t &Eta);
-  Float_t  GetRegression(const Int_t &i) {return energySCEle_[i]/rawEnergySCEle_[i];}
+  virtual Float_t  GetRegression(const Int_t &i)=0;
   void     LoadMomentumCorrection(std::string filename);
   void     LoadEopWeight(const std::vector<std::string> &weightcfg);
 

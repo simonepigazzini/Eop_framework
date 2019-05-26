@@ -52,7 +52,8 @@ void ECALELFInterface::BranchExtraCalib(TChain* chain)
 }
 
 
-ECALELFInterface::ECALELFInterface(CfgManager conf)
+ECALELFInterface::ECALELFInterface(CfgManager conf):
+  eeRing_(0)
 {
   //-------------------------------------
   //initialize chain and branch tree
@@ -84,7 +85,11 @@ ECALELFInterface::ECALELFInterface(CfgManager conf)
   //load event selection
   selection_str_ = conf.GetOpt<string> ("Input.selection");
   selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
-  
+
+  //-------------------------------------
+  //initialize EEring
+  string EEringsFileName = conf.GetOpt<string> ("Input.eeringsFileName");
+  eeRing_ = new TEndcapRings(EEringsFileName);
 }
 
 ECALELFInterface::~ECALELFInterface()
@@ -94,6 +99,9 @@ ECALELFInterface::~ECALELFInterface()
   for(auto ch_iterator : ch_)
     if(ch_iterator.second)
       (ch_iterator.second)->Delete();
+
+  if(eeRing_)
+    delete eeRing_;
 }
 
 Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
@@ -115,54 +123,73 @@ Bool_t  ECALELFInterface::isEB(const Int_t &i)
   return false;
 }
 
-Float_t ECALELFInterface::GetEnergy(const Int_t &i)
+void ECALELFInterface::GetSeed(Int_t &ix, Int_t &iy, const Int_t &i)
 {
-  return energySCEle_[i];
-}
-
-Float_t ECALELFInterface::GetCharge(const Int_t &i)
-{
-  return chargeEle_[i];
-}
-
-
-Float_t ECALELFInterface::GetEnergyRaw(const Int_t &i)
-{
-  return rawEnergySCEle_[i];
-}
-
-Float_t ECALELFInterface::GetESEnergy(const Int_t &i)
-{
-  return esEnergySCEle_[i];
-}
-
-Float_t  ECALELFInterface::GetP(const Int_t &i)
-{
-  return pAtVtxGsfEle_[i];
-}
-
-Float_t ECALELFInterface::GetEtaSC(const Int_t &i)
-{
-  return etaSCEle_[i];
-}
-
-Float_t ECALELFInterface::GetPhi(const Int_t &i)
-{
-  return phiEle_[i];
-}
-
-void ECALELFInterface::GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i)
-{
-  ieta=xSeed_[i];
-  iphi=ySeed_[i];
+  ix=xSeed_[i];
+  iy=ySeed_[i];
 }
 
 int ECALELFInterface::GetietaSeed(const Int_t &i)
 {
-  return xSeed_[i];
+  if(this->isEB(i))
+    return xSeed_[i];
+  else
+    return eeRing_->GetEndcapIeta(xSeed_[i], ySeed_[i], (int)(etaSCEle_[i]>0) );
 }
 
 int ECALELFInterface::GetiphiSeed(const Int_t &i)
 {
-  return ySeed_[i];
+  if(this->isEB(i))
+    return ySeed_[i];
+  else
+    return eeRing_->GetEndcapIphi(xSeed_[i], ySeed_[i], (int)(etaSCEle_[i]>0) );
 }
+
+int ECALELFInterface::GetEERingSeed(const Int_t &i)
+{
+  if( ! this->isEB(i) )
+    return eeRing_->GetEndcapRing(xSeed_[i], ySeed_[i], (int)(etaSCEle_[i]>0) );
+  else
+    return -999;
+}
+  
+void ECALELFInterface::PrintEleSummary    (const Int_t &i)
+{
+  cout<<std::left
+      <<std::setw(15)<<"event "  <<eventNumber_
+      <<std::setw(15)<<"run "    <<runNumber_
+      <<std::setw(15)<<"ls "     <<lumiBlock_
+      <<std::setw(6) <<"ele "    <<i
+      <<std::setw(13)<<"charge " <<chargeEle_[i]
+      <<std::setw(13)<<"E "      <<energySCEle_[i]
+      <<std::setw(13)<<"p "      <<pAtVtxGsfEle_[i]
+      <<std::setw(10)<<"etaSC "  <<etaSCEle_[i]
+      <<std::setw(13)<<"xSeed "  <<xSeed_[i]
+      <<std::setw(13)<<"ySeed "  <<ySeed_[i]
+      <<endl;
+}
+
+void ECALELFInterface::PrintRHEleSummary  (const Int_t &i)
+{    
+  cout<<"ele "<<i<<endl;
+  cout<<std::left
+      <<std::setw(10)<<"x "
+      <<std::setw(10)<<"y "
+      <<std::setw(10)<<"z "
+      <<std::setw(10)<<"E "
+      <<std::setw(15)<<"frac "
+      <<std::setw(15)<<"flag "
+      <<endl;
+ 
+  for(unsigned iRH=0; iRH<ERecHit_[i]->size(); ++iRH)
+    cout<<std::left
+	<<std::setw(10)<<XRecHit_[i]
+	<<std::setw(10)<<YRecHit_[i]
+	<<std::setw(10)<<ZRecHit_[i]
+	<<std::setw(10)<<ERecHit_[i]
+	<<std::setw(15)<<fracRecHit_[i]
+	<<std::setw(15)<<recoFlagRecHit_[i]
+	<<endl;
+
+}
+

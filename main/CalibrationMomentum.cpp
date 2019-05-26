@@ -1,5 +1,5 @@
 #include "histoFunc.h"
-#include "calibrator.h"
+#include "calibratorEB.h"
 #include "calibratorEE.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
   calibrator* data;
 
   if(isEB)
-    data = new calibrator(config);
+    data = new calibratorEB(config);
   else
     data = new calibratorEE(config);
 

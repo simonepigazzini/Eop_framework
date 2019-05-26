@@ -1,23 +1,14 @@
-#include "calibratorEE.h"
+#include "calibratorEB.h"
 
 using namespace std;
 
-calibratorEE::calibratorEE(CfgManager conf):
-  calibrator(conf)
-{
-  //-------------------------------------
-  //initialize EEring
-  string EEringsFileName = conf.GetOpt<string> ("Input.eeringsFileName");
-  eeRing_ = new TEndcapRings(EEringsFileName);
-}
+calibratorEB::calibratorEB(CfgManager conf):
+  calibrator(conf){}
 
-calibratorEE::~calibratorEE()
-{
-  if(eeRing_)
-    delete eeRing_;
-}
+calibratorEB::~calibratorEB()
+{}
 
-Float_t calibratorEE::GetPcorrected(const Int_t &i)
+Float_t  calibratorEB::GetPcorrected(const Int_t &i)
 {
 #ifdef DEBUG
   if(!electron_momentum_correction_)
@@ -26,17 +17,19 @@ Float_t calibratorEE::GetPcorrected(const Int_t &i)
     cerr<<"[ERROR]: positron momentum correction not loaded"<<endl;
 #endif
   if(chargeEle_[i]==-1)
-    return pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]) - esEnergySCEle_[i];
+    return pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]);
   if(chargeEle_[i]==+1)
-    return pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]) - esEnergySCEle_[i];
+    return pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]);
   return -999.;
 }
 
-Float_t calibratorEE::GetICEnergy(const Int_t &i)
+Float_t calibratorEB::GetICEnergy(const Int_t &i)
 {
+  if(i>1)
+    cerr<<"[ERROR]:energy array out of range"<<endl;
   float kRegression=1;
   if(useRegression_)
-    kRegression=energySCEle_[i]/(rawEnergySCEle_[i]+esEnergySCEle_[i]);
+    kRegression=energySCEle_[i]/rawEnergySCEle_[i];
   float E=0;
   float IC = 1.;
   int ieta,iphi;
@@ -50,9 +43,10 @@ Float_t calibratorEE::GetICEnergy(const Int_t &i)
 #ifdef DEBUG
     if(ieta>=Neta_) cout<<"ieta>=Neta"<<endl;
     if(iphi>=Nphi_) cout<<"iphi>=Nphi"<<endl;
-    if(ieta<0)     cout<<"ieta<0"<<endl;
-    if(iphi<0)     cout<<"iphi<0"<<endl;
+    if(ieta<0)      cout<<"ieta<0"<<endl;
+    if(iphi<0)      cout<<"iphi<0"<<endl;
 #endif
+
     IC = (xtal_[fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
     E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
   }
@@ -60,7 +54,7 @@ Float_t calibratorEE::GetICEnergy(const Int_t &i)
   return E;
 }
 
-Float_t calibratorEE::GetRegression(const Int_t &i) 
+Float_t  calibratorEB::GetRegression(const Int_t &i)
 {
-  return energySCEle_[i]/(rawEnergySCEle_[i]+esEnergySCEle_[i]);
+  return energySCEle_[i]/rawEnergySCEle_[i];
 }

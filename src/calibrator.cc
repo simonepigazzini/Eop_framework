@@ -86,7 +86,7 @@ void calibrator::LoadEopWeight(const vector<string> &weightcfg)
     cout<<"[ERROR]: unknown type "<<type<<endl;
 
 }
-
+/*
 Float_t  calibrator::GetPcorrected(const Int_t &i)
 {
 #ifdef DEBUG
@@ -101,7 +101,8 @@ Float_t  calibrator::GetPcorrected(const Int_t &i)
     return pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]);
   return -999.;
 }
-
+*/
+/*
 Float_t calibrator::GetICEnergy(const Int_t &i)
 {
   if(i>1)
@@ -132,7 +133,7 @@ Float_t calibrator::GetICEnergy(const Int_t &i)
       
   return E;
 }
-
+*/
 Float_t  calibrator::GetWeight(const Float_t &Eta, const Float_t &Eop)
 {
   return weight_->GetBinContent(weight_->FindBin(Eta,Eop));

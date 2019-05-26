@@ -1,5 +1,5 @@
-#ifndef calibratorEE__
-#define calibratorEE__
+#ifndef calibratorEB__
+#define calibratorEB__
 
 #include <iostream>
 #include <string>
@@ -19,21 +19,18 @@
 #include "TFile.h"
 #include "TObject.h"
 
-class calibratorEE : public calibrator
+class calibratorEB : public calibrator
 {
 
  public:
   //---ctors---
-  calibratorEE(CfgManager conf);
+  calibratorEB(CfgManager conf);
   //---dtor---
-  ~calibratorEE();
+  ~calibratorEB();
   //---utils--
   Float_t  GetPcorrected(const Int_t &i);
   Float_t  GetRegression(const Int_t &i);
   Float_t  GetICEnergy(const Int_t &i);
-  
- private:
-  TEndcapRings* eeRing_;//for now useless but maybe useful in the future
 
 };
 

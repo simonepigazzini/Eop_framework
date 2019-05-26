@@ -1,7 +1,7 @@
 //#include "utils.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "calibrator.h"
+#include "calibratorEB.h"
 #include "ICmanager.h"
 
 #include <iostream>
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   config.ParseConfigFile(cfgfilename.c_str());
   
   //define the calibrator object to easily access to the ntuples data
-  calibrator EB(config);
+  calibratorEB EB(config);
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
   if(weightcfg.size()>0)
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
 	  //if(E>15. && p>15.)
 	  {
 	    numerator(ieta,iphi)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	    denominator(ieta,iphi) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * weight;
+	    denominator(ieta,iphi) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
 	    //cout<<"numerator="<<numerator[index]<<"\tdenominator="<<denominator[index]<<endl;
 	    //if(ieta>70) getchar();
 	  }

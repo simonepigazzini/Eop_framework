@@ -17,8 +17,8 @@ print("-------------------------------------------------------------------------
 
 #parameters
 current_dir = os.getcwd();
-#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/PromptReco2017_103X_updatedSCregressionV3/"#parent folder containing all the ntuples of interest
-ntuple_dir="/home/fabio/work/Eop_framework/data/"
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/PromptReco2017_103X_updatedSCregressionV3/"#parent folder containing all the ntuples of interest
+#ntuple_dir="/home/fabio/work/Eop_framework/data/"
 tag_list = ["Run2017B","Run2017C","Run2017D","Run2017E","Run2017F"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag containing some error)
@@ -37,6 +37,7 @@ parser.add_option("--RestartFromLoop", action="store",      type="int", dest="Re
 parser.add_option('--odd',             action='store_true',             dest='odd',             default=False,      help='run only on odd entries')
 parser.add_option('--even',            action='store_true',             dest='even',            default=False,      help='run only on even entries')
 parser.add_option('--EE',              action='store_true',             dest='EE',              default=False,      help='run endcap calibration')
+parser.add_option('--tier0',           action='store_true',             dest='tier0',           default=False,      help='submit to CAF queues (only if you are logged in lxplus-t0.cern.ch)')
 
 (options, args) = parser.parse_args()
 
@@ -130,9 +131,9 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                         BUILDEOPETA_INPUT_OPTION=""
                         UPDATEIC_INPUT_OPTION=""
                         if "EB" in task:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.2 1.9 --Eopweightbins 1000"
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.2 1.9 --Eopweightbins 204"
                         else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 1000"                        
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 152"                        
                     if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION=""
@@ -142,9 +143,9 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
                         if "EB" in task:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.85 1.15 --Eopweightbins 177"
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.85 1.15 --Eopweightbins 36"
                         else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 1000"                        
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 152"                        
 
                     if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
@@ -181,6 +182,8 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
         condorsub.write("error                 = $(scriptname).$(ClusterId).err\n")
         condorsub.write("log                   = "+job_parent_folder+"/log/log.$(ClusterId).log\n")
         condorsub.write('+JobFlavour           = "workday"\n')
+        if options.tier0:
+            condorsub.write('+AccountingGroup      = "group_u_CMS.CAF.ALCA"\n')
         condorsub.write("queue scriptname matching "+job_parent_folder+"/job_loop_"+str(iLoop)+"_file_*_"+task+"/*.sh\n")
         condorsub.close()
         #fill the submitting manager file
@@ -220,6 +223,8 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
         mergesub.write("error                 = "+mergescriptName+".$(ClusterId).err\n")
         mergesub.write("log                   = "+job_parent_folder+"/log/log.$(ClusterId).log\n")
         mergesub.write('+JobFlavour           = "longlunch"\n')
+        if options.tier0:
+            mergesub.write('+AccountingGroup      = "group_u_CMS.CAF.ALCA"\n')
         mergesub.write("queue 1\n")
         mergesub.close()
 

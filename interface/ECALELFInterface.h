@@ -2,11 +2,13 @@
 #define ECALELFINTERFACE__
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 
 #include "CfgManager.h"
 #include "CfgManagerT.h"
+#include "TEndcapRings.h"
 
 #include "TTree.h"
 #include "TChain.h"
@@ -27,28 +29,36 @@ class ECALELFInterface
   //---dtor---
   ~ECALELFInterface();
   //---utils--
-  Long64_t GetEntries() {return chain_->GetEntries();}
-  Long64_t GetEntry(const Long64_t &i);
-  Bool_t   isSelected(const Int_t &i) {return selection_->EvalInstance(i);}
-  Bool_t   isEB(const Int_t &i);
-  Float_t  GetEnergy(const Int_t &i);
-  Float_t  GetCharge(const Int_t &i);
-  Float_t  GetMee() {return Mee_; };
-  Float_t  GetEnergyRaw(const Int_t &i);
-  Int_t    GeteventNumber() {return eventNumber_;}
-  Float_t  GetESEnergy(const Int_t &i);
-  Float_t  GetP(const Int_t &i);
-  Float_t  GetEtaSC(const Int_t &i);
-  Float_t  GetPhi(const Int_t &i);
-  void     GetSeed(Int_t &ieta, Int_t &iphi, const Int_t &i);
-  int      GetietaSeed(const Int_t &i);
-  int      GetiphiSeed(const Int_t &i);
-  std::vector<float>* GetERecHit(const Int_t &i)        {return ERecHit_[i];}
-  std::vector<float>* GetfracRecHit(const Int_t &i)     {return fracRecHit_[i];}
-  std::vector<int>*   GetXRecHit(const Int_t &i)        {return XRecHit_[i];}
-  std::vector<int>*   GetYRecHit(const Int_t &i)        {return YRecHit_[i];}
-  std::vector<int>*   GetZRecHit(const Int_t &i)        {return ZRecHit_[i];}
-  std::vector<int>*   GetrecoFlagRecHit(const Int_t &i) {return recoFlagRecHit_[i];}
+  Long64_t            GetEntries         ()                                                       {return chain_->GetEntries();}
+  Long64_t            GetEntry           (const Long64_t &i);
+  Bool_t              isSelected         (const Int_t &i)                                         {return selection_->EvalInstance(i);}
+  Bool_t              isEB               (const Int_t &i);
+  Float_t             GetEnergy          (const Int_t &i)                                         {return energySCEle_[i];}
+  Float_t             GetCharge          (const Int_t &i)                                         {return chargeEle_[i];}
+  Float_t             GetMee             ()                                                       {return Mee_; };
+  Float_t             GetEnergyRaw       (const Int_t &i)                                         {return rawEnergySCEle_[i];}
+  Int_t               GeteventNumber     ()                                                       {return eventNumber_;}
+  Float_t             GetESEnergy        (const Int_t &i)                                         {return esEnergySCEle_[i];}
+  Float_t             GetP               (const Int_t &i)                                         {return pAtVtxGsfEle_[i];}
+  Float_t             GetEtaSC           (const Int_t &i)                                         {return etaSCEle_[i];}
+  Float_t             GetPhi             (const Int_t &i)                                         {return phiEle_[i];}
+  void                GetSeed            (Int_t &ix,     Int_t &iy, const Int_t &i);
+  int                 GetixSeed          (const Int_t &i)                                         {return xSeed_[i];}
+  int                 GetiySeed          (const Int_t &i)                                         {return ySeed_[i];}
+  int                 GetietaSeed        (const Int_t &i);
+  int                 GetiphiSeed        (const Int_t &i);
+  int                 GetEERingSeed      (const Int_t &i);
+  std::vector<float>* GetERecHit         (const Int_t &i)                                         {return ERecHit_[i];}
+  std::vector<float>* GetfracRecHit      (const Int_t &i)                                         {return fracRecHit_[i];}
+  std::vector<int>*   GetXRecHit         (const Int_t &i)                                         {return XRecHit_[i];}
+  std::vector<int>*   GetYRecHit         (const Int_t &i)                                         {return YRecHit_[i];}
+  std::vector<int>*   GetZRecHit         (const Int_t &i)                                         {return ZRecHit_[i];}
+  std::vector<int>*   GetrecoFlagRecHit  (const Int_t &i)                                         {return recoFlagRecHit_[i];}
+  void                PrintEleSummary    (const Int_t &i);
+  void                PrintRHEleSummary  (const Int_t &i);
+
+ private:
+  TEndcapRings* eeRing_;
 
  protected:
   void BranchSelected(TChain* chain);

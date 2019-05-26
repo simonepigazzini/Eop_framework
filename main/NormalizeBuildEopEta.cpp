@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     Eop_projection=Eop_vs_Eta->ProjectionY("_py",ieta,ieta,"");
     float Nev = Eop_projection->Integral(0,-1);//integral including underflow and overflow
     if(Nev==0)
-      cout<<"[WARNING]: Nev=0 for eta bin "<<ieta<<endl;
+      continue;
     for(int iEop=0 ; iEop<=Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)
     {
       float Eop = Eop_vs_Eta->GetBinContent(ieta,iEop);
