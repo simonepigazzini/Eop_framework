@@ -28,13 +28,14 @@ using namespace std;
 
 void PrintUsage()
 {
-  cerr << ">>>>> usage:  BuildEopEta --cfg <configFileName> --inputIC <objname> <filename> --Eopweightrange <weightrangemin> <weightrangemax> --Eopweightbins <Nbins> --BuildEopEta_output <outputFileName> --odd[or --even]" << endl;
+  cerr << ">>>>> usage:  BuildEopEta --cfg <configFileName> --inputIC <objname> <filename> --Eopweightrange <weightrangemin> <weightrangemax> --Eopweightbins <Nbins> --BuildEopEta_output <outputFileName> --odd[or --even] [--EE]" << endl;
   cerr << "               " <<            " --cfg                MANDATORY"<<endl;
   cerr << "               " <<            " --inputIC            OPTIONAL, can be also provided in the cfg"<<endl;
   cerr << "               " <<            " --Eopweightrange     OPTIONAL, can be also provided in the cfg" <<endl; 
   cerr << "               " <<            " --Eopweightbins      OPTIONAL, can be also provided in the cfg" <<endl; 
   cerr << "               " <<            " --BuildEopEta_output OPTIONAL, can be also provided in the cfg" <<endl;
   cerr << "               " <<            " --odd[or --even]     OPTIONAL" <<endl;
+  cerr << "               " <<            " --EE                 OPTIONAL, default false" <<endl;
 }
 
 int main(int argc, char* argv[])
