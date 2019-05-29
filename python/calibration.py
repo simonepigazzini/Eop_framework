@@ -47,9 +47,11 @@ if(options.odd):
 if(options.even):
     splitstat = ["even"]
 
-tasklist = ["BuildEopEta_EB","ComputeIC_EB"]
-if(options.EE):
-    tasklist = ["BuildEopEta_EE","ComputeIC_EE"]
+tasklist = ["BuildEopEta","ComputeIC"]
+
+additional_options = ""
+if options.EE:
+    additional_options += " --EE "
 else:
     print("setting up barrel calibration, if you want endcap calibration add the option --EE")
 
@@ -169,7 +171,8 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                     " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
                     " "+EOPWEIGHTRANGE_OPTION+
                     " --ComputeIC_output "+UPDATEIC_OUTPUT+
-                    " --"+split+"\n")
+                    " --"+split+
+                    " "+additional_options+"\n")
                 outScript.write("echo finish\n") 
                 outScript.close();
                 os.system("chmod 777 "+outScriptName)
