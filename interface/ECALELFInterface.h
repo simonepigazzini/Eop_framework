@@ -18,6 +18,9 @@
 #include "TH2F.h"
 #include "TFile.h"
 #include "TObject.h"
+#include "TString.h"
+
+using namespace std;
 
 class ECALELFInterface
 {
@@ -56,6 +59,8 @@ class ECALELFInterface
   std::vector<int>*   GetrecoFlagRecHit  (const Int_t &i)                                         {return recoFlagRecHit_[i];}
   void                PrintEleSummary    (const Int_t &i);
   void                PrintRHEleSummary  (const Int_t &i);
+  void                SetSelection       (string selection); 
+  void                AddSelection       (string additional_selection_str); 
 
  private:
   TEndcapRings* eeRing_;

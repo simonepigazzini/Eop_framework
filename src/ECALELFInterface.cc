@@ -53,7 +53,8 @@ void ECALELFInterface::BranchExtraCalib(TChain* chain)
 
 
 ECALELFInterface::ECALELFInterface(CfgManager conf):
-  eeRing_(0)
+  eeRing_(0),
+  selection_(0)
 {
   //-------------------------------------
   //initialize chain and branch tree
@@ -83,8 +84,7 @@ ECALELFInterface::ECALELFInterface(CfgManager conf):
 
   //-------------------------------------
   //load event selection
-  selection_str_ = conf.GetOpt<string> ("Input.selection");
-  selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
+  this->SetSelection( conf.GetOpt<string> ("Input.selection") );
 
   //-------------------------------------
   //initialize EEring
@@ -94,7 +94,8 @@ ECALELFInterface::ECALELFInterface(CfgManager conf):
 
 ECALELFInterface::~ECALELFInterface()
 {
-  delete selection_;
+  if(selection_)
+    delete selection_;
 
   for(auto ch_iterator : ch_)
     if(ch_iterator.second)
@@ -192,4 +193,29 @@ void ECALELFInterface::PrintRHEleSummary  (const Int_t &i)
 	<<endl;
 
 }
+
+void ECALELFInterface::SetSelection(string selection_str)
+{
+  if(selection_)
+    delete selection_;
+  selection_str_ = selection_str;
+  selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
+} 
+
+
+void ECALELFInterface::AddSelection(string additional_selection_str)
+{
+  if(selection_)
+    delete selection_;
+
+  if(selection_str_=="")
+    selection_str_ = additional_selection_str;
+  else
+  {
+    selection_str_.insert(0,"(");
+    selection_str_.append(") && ("+additional_selection_str+")");
+  }
+
+  selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
+} 
 
