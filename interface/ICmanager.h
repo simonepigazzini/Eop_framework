@@ -45,6 +45,7 @@ class ICmanager
   TH2D*    GetPulledIC(TH2D* h2_ICpull);
   TH2D*    PullIC(TH2D* h2_ICpull);
   void     EtaringNormalizationEB();
+  void     PrintSettings();
   //TH2D* EtaringNormalizationEE(); //TBD
   TH1D*    GetICspread(int nBins_spread = 2000, float spreadMin = 0., float spreadMax = 2.);
   TGraphErrors* GetICspreadvsEtaEB(int nBins_spread = 2000, float spreadMin = 0., float spreadMax = 2.);

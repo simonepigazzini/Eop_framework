@@ -190,6 +190,15 @@ void ICmanager::EtaringNormalizationEB()
   delete avgIC_vs_iEta;
 }
 
+void ICmanager::PrintSettings()
+{
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+  cout<<"> ICmanager settings:"<<endl;
+  cout<<">>> Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax_<<"] and Nphi="<<Nphi_<<" in ["<<iphimin_<<","<<iphimax_<<"]"<<endl;
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+}
+
+
 TH1D* ICmanager::GetICspread( int nBins_spread, float spreadMin, float spreadMax)
 {
   cout<<"ICmanager::GetICspread still to be validated"<<endl;
@@ -445,6 +454,8 @@ TH2D* ICmanager::GetStatPrec(ICmanager* IC2)
   return StatPrec;
 
 }
+
+
 
 TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator)
 {

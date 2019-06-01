@@ -34,6 +34,7 @@ class calibrator: public ICmanager, public ECALELFInterface
   virtual Float_t  GetRegression(const Int_t &i)=0;
   void     LoadMomentumCorrection(std::string filename);
   void     LoadEopWeight(const std::vector<std::string> &weightcfg);
+  virtual  void PrintSettings();
 
  protected:
   bool useRegression_;

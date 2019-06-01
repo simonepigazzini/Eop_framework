@@ -1,4 +1,9 @@
 #include "ECALELFInterface.h"
+#include "TObjArray.h"
+#include "TChainElement.h"
+#include "TList.h"
+#include "TFriendElement.h"
+#include "TROOT.h"
 
 using namespace std;
 
@@ -119,7 +124,7 @@ Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
 
 Bool_t  ECALELFInterface::isEB(const Int_t &i)
 {
-  if(etaSCEle_[i]<1.477)
+  if(fabs(etaSCEle_[i])<1.479)
     return true;
   return false;
 }
@@ -219,3 +224,37 @@ void ECALELFInterface::AddSelection(string additional_selection_str)
   selection_ = new TTreeFormula("selection", selection_str_.c_str(), chain_);
 } 
 
+void ECALELFInterface::PrintSettings()
+{
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+  cout<<"> ECALELFInterface settings:"<<endl;
+
+  cout<<">>> MAIN CHAIN NAME: "<<chain_->GetName()<<endl; 
+  TObjArray* filelist = chain_->GetListOfFiles();
+  TIter next(filelist);
+  TChainElement *element;
+  cout<<">>> FILENAMES: "<<endl;
+  while ((element = (TChainElement*)next())) 
+    cout<<">>> \t"<<element->GetTitle()<<endl;
+
+  TList* friendlist = chain_->GetListOfFriends();
+  TIter nextf(friendlist);
+  TFriendElement *fr;
+  while ((fr = (TFriendElement*)nextf())) 
+  {
+    cout<<endl<<">>> FRIEND CHAIN NAME: "<<fr->GetTreeName()<<endl;
+    TChain* fc = (TChain*)gROOT->FindObject(fr->GetTreeName());
+    if(fc)
+    {
+      cout<<">>> FILENAMES: "<<endl;
+      TObjArray* ffilelist = fc->GetListOfFiles();
+      TIter ffnext(ffilelist);
+      TChainElement *felement;
+      while ((felement = (TChainElement*)ffnext()))
+      cout<<">>> \t"<<felement->GetTitle()<<endl;
+    }
+  }
+
+  cout<<"> APPLIED SELECTION: "<<selection_->GetExpFormula().Data()<<endl;
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+}

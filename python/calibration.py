@@ -132,10 +132,10 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                     if "BuildEopEta" in task:
                         BUILDEOPETA_INPUT_OPTION=""
                         UPDATEIC_INPUT_OPTION=""
-                        if "EB" in task:
+                        if not options.EE:
                             EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.2 1.9 --Eopweightbins 204"
                         else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 152"                        
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
                     if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
                         UPDATEIC_INPUT_OPTION=""
@@ -144,10 +144,10 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
                     if "BuildEopEta" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
                         UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
-                        if "EB" in task:
+                        if not options.EE:
                             EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.85 1.15 --Eopweightbins 36"
                         else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 2.0 --Eopweightbins 152"                        
+                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
 
                     if "ComputeIC" in task:
                         BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"

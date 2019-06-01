@@ -96,6 +96,13 @@ int main(int argc, char* argv[])
   else
     calorimeter = new calibratorEE(config);
 
+  //////////////////////////////////////////////////////////////////////////////////////////
+  //Only for validation
+  if(EE)
+    calorimeter->SetSelection("abs(chargeEle)==1 && fabs(etaSCEle) > 1.479 && fabs(etaSCEle) < 2.5");
+  //////////////////////////////////////////////////////////////////////////////////////////
+  calorimeter->PrintSettings();
+
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
   if(ICcfg.size()>0)
     calorimeter->LoadIC(ICcfg);
@@ -181,7 +188,11 @@ int main(int argc, char* argv[])
 	else
 	  ietaSeed=calorimeter->GetEERingSeed(iEle);
 	if(p!=0)
+	{
+	  //std::cout<<"event:"<<calorimeter->GeteventNumber()<<"\tSEED:"<<ietaSeed<<"\tE:"<<E<<"\tp:"<<p<<std::endl;   //DEBUG
 	  Eop_vs_ieta->Fill(ietaSeed,E/p);
+	  //getchar();
+	}
 	//else
 	//  cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
       }

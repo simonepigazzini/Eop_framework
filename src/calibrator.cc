@@ -91,3 +91,31 @@ Float_t  calibrator::GetWeight(const Float_t &Eta, const Float_t &Eop)
 {
   return weight_->GetBinContent(weight_->FindBin(Eta,Eop));
 }
+
+void calibrator::PrintSettings()
+{
+  ECALELFInterface::PrintSettings();
+  ICmanager::PrintSettings();
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+  cout<<"> calibrator settings:"<<endl;
+  if(useRegression_)
+    cout<<">>> USE REGRESSION: true"<<endl;
+  else
+    cout<<">>> USE REGRESSION: false"<<endl;
+
+  if(electron_momentum_correction_)
+    cout<<">>> Electron momentum correction \'"<<electron_momentum_correction_->GetName()<<"\' LOADED"<<endl;
+  else
+    cout<<">>> Electron momentum correction NOT LOADED"<<endl;
+
+  if(positron_momentum_correction_)
+    cout<<">>> Positron momentum correction \'"<<positron_momentum_correction_->GetName()<<"\' LOADED"<<endl;
+  else
+    cout<<">>> Positron momentum correction NOT LOADED"<<endl;
+
+  if(weight_)
+    cout<<">>> Eop weight \'"<<weight_->GetName()<<"\' LOADED"<<endl;
+  else
+    cout<<">>> Eop weight NOT LOADED"<<endl;
+  cout<<"----------------------------------------------------------------------------------"<<endl;
+}

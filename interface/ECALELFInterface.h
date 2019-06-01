@@ -61,6 +61,7 @@ class ECALELFInterface
   void                PrintRHEleSummary  (const Int_t &i);
   void                SetSelection       (string selection); 
   void                AddSelection       (string additional_selection_str); 
+  void                PrintSettings      ();    
 
  private:
   TEndcapRings* eeRing_;
