@@ -30,16 +30,22 @@ class MonitoringManager: public ECALELFInterface
   //---utils--
   void  SetTemplateModel(int Nbin, float xmin, float xmax);
   TH1F* BuildTemplate();
-  void  BuildRunRanges(){};
-  void  RunMonitoring(){};
+  void  RunDivide(){};
+  void  LoadTimeBins(){};
+  void  AddScale(std::string variable, int Nbin, float xmin, float xmax){};
+  void  FillTimeBins(){};
+  void  RunTemplateFit(string scale){};
+  void  RunComputeMean(string scale){};
+  void  RunComputeMedian(string scale){};
+  void  SaveScales(TFile* outfile){};
+  void  saveHistos(TFile* outfile){};
+
   
  protected:
-  std::string scalename_;
+  std::string variable_;
   std::string label_;
-  float xmin_template_, xmax_template_;
-  int   Nbin_template_;
   TH1F* h_template_;
-
+  CfgManager conf_;
 };
 
 #endif

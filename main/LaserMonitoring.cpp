@@ -5,76 +5,99 @@
 #include <iostream>
 #include <string>
 
-#include "TROOT.h"
-#include "TStyle.h"
 #include "TFile.h"
-#include "TF1.h"
-#include "TH1.h"
-#include "TH2.h"
-#include "TProfile.h"
-#include "TCanvas.h"
-#include "TGraphErrors.h"
-#include "TPaveStats.h"
-#include "TLegend.h"
 #include "TChain.h"
-#include "TVirtualFitter.h"
-#include "TLorentzVector.h"
-#include "TLatex.h"
-#include "TAxis.h"
-#include "TMath.h"
+#include "TH1.h"
+#include "TH1F.h"
+#include "TGraphErrors.h"
+#include "TString.h"
+
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-  string cfgfilename="";
-
+  string cfgfilename   = "";
+  bool   buildTemplate = false;
+  bool   runDivide     = false;
+  bool   scaleMonitor  = false;
+  bool   saveHistos    = false;
+  
   //Parse the input options
   for(int iarg=1; iarg<argc; ++iarg)
   {
     if(string(argv[iarg])=="--cfg")
       cfgfilename=argv[iarg+1];
+    if(string(argv[iarg])=="--buildTemplate")
+      buildTemplate=true;
+    if(string(argv[iarg])=="--runDivide")
+      runDivide=true;
+    if(string(argv[iarg])=="--scaleMonitor")
+      scaleMonitor=true;
+    if(string(argv[iarg])=="--saveHistos")
+      saveHistos=true;
   }
       
   // parse the config file
   CfgManager config;
   config.ParseConfigFile(cfgfilename.c_str());
 
-  //define the monitoring manager object
+  // define the monitoring manager object
   MonitoringManager monitor(config);
 
-  //define the things to do
-  vector<string> ToDoList = config.GetOpt<vector<string> > ("LaserMonitoring.tasklist");
-  for(auto ToDo : ToDoList)
+  // perform the requested tasks
+  
+  if(buildTemplate)
   {
-    cout<<ToDo<<endl;
-    if(ToDo=="BuildTemplate")
-    {
-      if( config.OptExist("LaserMonitoring.BuildTemplate.Nbin") && config.OptExist("LaserMonitoring.BuildTemplate.xmin") && config.OptExist("LaserMonitoring.BuildTemplate.xmax") ) 
-      {
-	int Nbin   = config.GetOpt<int>   ("LaserMonitoring.BuildTemplate.Nbin");
-	float xmin = config.GetOpt<float> ("LaserMonitoring.BuildTemplate.xmin");
-	float xmax = config.GetOpt<float> ("LaserMonitoring.BuildTemplate.xmax");
-	monitor.SetTemplateModel(Nbin,xmin,xmax);
-      }
-      else
-	cout<<"[WARNING]: option LaserMonitoring.BuildTemplate.Nbin or LaserMonitoring.BuildTemplate.xmin or LaserMonitoring.BuildTemplate.xmax is missing --> template histo binning will be automatic"<<endl;
-      TH1F* h_template = monitor.BuildTemplate();
-      string outfilename = config.GetOpt<string> ("LaserMonitoring.BuildTemplate.output");
-      TFile* outfile = new TFile(outfilename.c_str(),"RECREATE");
-      outfile->cd();
-      cout<<">> Saving template to "<<outfilename<<"/"<<h_template->GetName()<<endl;
-      h_template->Write();
-      outfile->Close();
-    }
-    if(ToDo=="RunRanges")
-    {
-      monitor.BuildRunRanges();
-    }
-    if(ToDo=="RunMonitoring")
-    {
-      monitor.RunMonitoring();
-    }
+    TH1F* h_template = monitor.BuildTemplate();
+    string outfilename = config.GetOpt<string> ("LaserMonitoring.BuildTemplate.output");
+    TFile* outfile = new TFile(outfilename.c_str(),"RECREATE");
+    outfile->cd();
+    cout<<">> Saving template to "<<outfilename<<"/"<<h_template->GetName()<<endl;
+    h_template->Write();
+    outfile->Close();
   }
+
+  if(runDivide)
+    monitor.RunDivide();
+
+  if(scaleMonitor)
+  {
+    monitor.LoadTimeBins();
+
+    //fill the histos (one histo per time bin per variable) 
+    monitor.FillTimeBins();
+
+    //perform the monitoring, i.e., estrapolate a scale value with the specified method per time bin per variable
+    vector<string> MonitoredScales = config.GetOpt<vector<string> > ("LaserMonitoring.scaleMonitor.MonitoredScales");
+    for(auto scale : MonitoredScales)
+    {
+      TString method = config.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.method",scale.c_str()));
+      method.ToLower(); //convert capital letters to lower case to avoid mis-understanding
+      if(method=="templatefit")
+	monitor.RunTemplateFit(scale);
+      else
+	if(method=="mean")
+	  monitor.RunComputeMean(scale);
+	else
+	  if(method=="median")
+	    monitor.RunComputeMedian(scale);
+	  else
+	  {
+	    cout<<"[ERROR]: unknown monitoring method \""<<method<<"\""<<endl;
+	    return -1;
+	  }
+    }
+    //save the output
+    string outfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
+    string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputwritemethod");
+    TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
+    monitor.SaveScales(outfile);
+    if(saveHistos)
+      monitor.saveHistos(outfile);
+    outfile->Close();
+  }//end scaleMonitor
+    
   return 0;
+  
 }
