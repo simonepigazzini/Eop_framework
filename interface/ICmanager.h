@@ -59,7 +59,7 @@ class ICmanager
   TGraphErrors* GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod );
   void SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod );
   TH2D* GetStatPrec(ICmanager* IC2);
-  //TGraphErrors* GetStatPrecvsEtaringEB(ICmanager* IC2);//TBD
+  //  TGraphErrors* GetStatPrecvsEtaringEB(ICmanager* IC2);
   //TGraphErrors* GetStatPrecvsEtaringEE(ICmanager* IC2);//TBD
   //TGraphErrors* GetResidualSpreadvsEtaringEB(ICmanager* IC2);//TBD
   //TGraphErrors* GetResidualSpreadvsEtaringEE(ICmanager* IC2);//TBD

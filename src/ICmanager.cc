@@ -454,8 +454,18 @@ TH2D* ICmanager::GetStatPrec(ICmanager* IC2)
   return StatPrec;
 
 }
-
-
+/*
+TGraphErrors* ICmanager::GetStatPrecvsEtaringEB(ICmanager* IC2)
+{
+  TH2D* StatPrec = this->GetStatPrec(IC2);
+  TGraphErrors* g_StatPrecvsEtaring = new TGraphErrors();
+  TH1D* h_StatPrec_etaRing;
+  for(int ieta=1; ieta<=StatPrec->GetNbinsX(); ++ieta)
+  {
+    h_StatPrec_etaRing = StatPrec->Projection
+  
+}
+*/
 
 TH2D* GetICpull(TH2D* h2_numerator,TH2D* h2_denominator)
 {
