@@ -11,12 +11,13 @@ void ECALELFInterface::BranchSelected(TChain* chain)
 {
   chain->SetBranchAddress("runNumber",          &runNumber_);
   chain->SetBranchAddress("lumiBlock",          &lumiBlock_);
+  chain->SetBranchAddress("eventTime",          &eventTime_);
   chain->SetBranchAddress("eventNumber",        &eventNumber_);
   chain->SetBranchAddress("chargeEle",          chargeEle_);
   chain->SetBranchAddress("etaEle",             etaEle_);
   chain->SetBranchAddress("phiEle",             phiEle_);
   chain->SetBranchAddress("rawEnergySCEle",     rawEnergySCEle_);
-  chain->SetBranchAddress("energy_ECAL_ele",    energySCEle_); //OLD ENERGY: energySCEle_must
+  chain->SetBranchAddress("energy_ECAL_ele",    energySCEle_);
   chain->SetBranchAddress("invMass_ECAL_ele",   &Mee_);
   chain->SetBranchAddress("etaSCEle",           etaSCEle_);
   chain->SetBranchAddress("phiSCEle",           phiSCEle_);

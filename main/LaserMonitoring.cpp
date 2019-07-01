@@ -68,6 +68,7 @@ int main(int argc, char* argv[])
     //fill the histos (one histo per time bin per variable) 
     monitor.FillTimeBins();
 
+    /*
     //perform the monitoring, i.e., estrapolate a scale value with the specified method per time bin per variable
     vector<string> MonitoredScales = config.GetOpt<vector<string> > ("LaserMonitoring.scaleMonitor.MonitoredScales");
     for(auto scale : MonitoredScales)
@@ -90,14 +91,15 @@ int main(int argc, char* argv[])
     }
     //save the output
     string outfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
-    string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputwritemethod");
+    string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
     TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
     monitor.SaveScales(outfile);
     if(saveHistos)
       monitor.saveHistos(outfile);
     outfile->Close();
+    */
   }//end scaleMonitor
-    
+  
   return 0;
   
 }

@@ -40,7 +40,10 @@ class ECALELFInterface
   Float_t             GetCharge          (const Int_t &i)                                         {return chargeEle_[i];}
   Float_t             GetMee             ()                                                       {return Mee_; };
   Float_t             GetEnergyRaw       (const Int_t &i)                                         {return rawEnergySCEle_[i];}
-  Int_t               GeteventNumber     ()                                                       {return eventNumber_;}
+  UInt_t              GeteventNumber     ()                                                       {return eventNumber_;}
+  UInt_t              GetRunNumber       ()                                                       {return runNumber_;}
+  UShort_t            GetLS              ()                                                       {return lumiBlock_;}
+  UInt_t              GetTime            ()                                                       {return eventTime_;}
   Float_t             GetESEnergy        (const Int_t &i)                                         {return esEnergySCEle_[i];}
   Float_t             GetP               (const Int_t &i)                                         {return pAtVtxGsfEle_[i];}
   Float_t             GetEtaSC           (const Int_t &i)                                         {return etaSCEle_[i];}
@@ -78,7 +81,8 @@ class ECALELFInterface
 
   ///! Declaration of leaf types
   UInt_t          runNumber_;
-  Int_t           lumiBlock_;
+  UShort_t        lumiBlock_;
+  UInt_t          eventTime_;
   Int_t           eventNumber_;
   Short_t         chargeEle_[3];
   Short_t         xSeed_[3];

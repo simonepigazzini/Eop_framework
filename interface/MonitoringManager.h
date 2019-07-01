@@ -4,9 +4,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
 
 #include "CfgManager.h"
 #include "CfgManagerT.h"
+#include "TimeBin.h"
 
 #include "TTree.h"
 #include "TChain.h"
@@ -28,24 +30,29 @@ class MonitoringManager: public ECALELFInterface
   //---dtor---
   ~MonitoringManager();
   //---utils--
-  void  SetTemplateModel(int Nbin, float xmin, float xmax);
   TH1F* BuildTemplate();
-  void  RunDivide(){};
-  void  LoadTimeBins(){};
+  void  RunDivide();
+  void  SaveTimeBins(std::string outfilename, std::string writemethod="RECREATE");
+  void  LoadTimeBins(std::string option="");
+  void  FillTimeBins();
+  std::vector<TimeBin::TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time );
+  /*
   void  AddScale(std::string variable, int Nbin, float xmin, float xmax){};
-  void  FillTimeBins(){};
   void  RunTemplateFit(string scale){};
   void  RunComputeMean(string scale){};
   void  RunComputeMedian(string scale){};
   void  SaveScales(TFile* outfile){};
   void  saveHistos(TFile* outfile){};
-
+  */
   
  protected:
-  std::string variable_;
+  std::vector<TimeBin::TimeBin>::iterator last_accessed_bin_;
+  std::vector<TimeBin::TimeBin> timebins;
+  std::string variablename_;
   std::string label_;
   TH1F* h_template_;
   CfgManager conf_;
+  bool BookHistos();
 };
 
 #endif
