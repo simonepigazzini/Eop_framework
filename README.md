@@ -10,22 +10,4 @@ NOTE
     - master of ECALELF:                        https://gitlab.cern.ch/shervin/ECALELF      
  - this code uses the very useful CfgManager class cloned from https://github.com/simonepigazzini/CfgManager to parse options from file 
 
-
-## Setup
-compilation with cmake should be fine with much more compiler/o.s./rootversion 
-   ```
-   git clone git@github.com:fabio-mon/Eop_framework.git
-   cd Eop_framework
-   mkdir build lib bin    
-   cd build       
-   cmake ..     
-   make     
-   ```
-NOTE: if you add a new class/header/source you have to manually cancel the cmake cache:    
-   ```
-   cd Eop_framework/build
-   rm -r ./*    
-   cmake ..   	   
-   make	 
-   ```
-ENJOY :)   
+For usage, setup, etc.., refer to the [git-wiki](https://github.com/fabio-mon/Eop_framework/wiki)
