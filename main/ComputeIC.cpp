@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
   if(Nentries==0)
     return -1;
   float E,p,eta,IC,weight,regression;
-  int iEle, index, ix, iy, ietaSeed;
+  int iEle, index, ix, iy, iz, ietaSeed;
   vector<float>* ERecHit;
   vector<float>* fracRecHit;
   vector<int>*   XRecHit;
@@ -160,30 +160,54 @@ int main(int argc, char* argv[])
 	fracRecHit=      calorimeter->GetfracRecHit(iEle);
 	XRecHit=         calorimeter->GetXRecHit(iEle);
 	YRecHit=         calorimeter->GetYRecHit(iEle);
-	//ZRecHit=         calorimeter->GetZRecHit(iEle);
+	ZRecHit=         calorimeter->GetZRecHit(iEle);
 	recoFlagRecHit=  calorimeter->GetrecoFlagRecHit(iEle);
 	E=               calorimeter->GetICEnergy(iEle);
 	p=               calorimeter->GetPcorrected(iEle);
 	if(p==0)
 	  continue;
         //eta=             calorimeter->GetEtaSC(iEle);
-	ietaSeed=        calorimeter->GetietaSeed(iEle);
+	if(!EE)
+	  ietaSeed=calorimeter->GetietaSeed(iEle);
+	else
+	  ietaSeed=calorimeter->GetEERingSeed(iEle);
 	weight=          calorimeter->GetWeight(ietaSeed,E/p);
 	regression=      calorimeter->GetRegression(iEle);
+	if(weight==0.)
+	  continue;
 	//cout<<"E="<<E<<"\tp="<<p<<"\teta="<<eta<<"\tweight="<<weight<<"\tregression="<<regression<<endl;
 	for(unsigned iRecHit=0; iRecHit<ERecHit->size(); ++iRecHit)
 	{
+	  
 	  if(recoFlagRecHit->at(iRecHit) >= 4)
 	    continue;
 	  ix=XRecHit->at(iRecHit);
 	  iy=YRecHit->at(iRecHit);
-	  IC=calorimeter->GetIC(ix,iy);
-	  //cout<<"entry="<<ientry<<endl;
-	  //cout<<"ix="<<ix<<"\tiy="<<iy<<"\tindex="<<index<<"\tIC="<<IC<<endl;
-	  //cout<<"ERH="<<ERecHit->at(iRecHit)<<"\tfracRH="<<fracRecHit->at(iRecHit)<<endl;
-	  //cout<<"regression="<<regression<<"\tE="<<E<<"\tp="<<p<<"\tweight="<<weight<<endl;
-	  numerator(ix,iy)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	  denominator(ix,iy) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
+	  iz=ZRecHit->at(iRecHit);
+	  if(!EE)
+	  {
+	    //barrel
+	    if(iz!=0)//skip endcap rechits in barrel superclusters (ieta~1.5)
+	      continue;
+	    IC=calorimeter->GetIC(ix,iy);
+	    numerator(ix,iy)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	    denominator(ix,iy) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
+	  }
+	  else
+	  {
+	    //endcap
+	    if(iz==0)//skip barrel rechits in endcap superclusters (ieta~1.5)
+	      continue;
+	    //for the endcap i have to write the ICs with what i call ix,iy inverted 
+	    //once they are written in the inverted order i can read them in the correct order
+	    //the following trick works because the endcaps are squared (Neta=Nphi)
+	    //otherwise GetIC and () methods would give you troubles 
+	    IC=calorimeter->GetIC(iy,ix);
+	    numerator(iy,ix)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	    denominator(iy,ix) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
+	    //cout<<"main\tiRECHIT="<<iRecHit<<"\tix="<<ix<<"\tiy="<<iy<<"\tiz="<<iz<<"\tIC="<<IC<<endl;
+	    //getchar();
+	  }
 	}
       }
     }

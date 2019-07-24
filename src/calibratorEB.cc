@@ -46,8 +46,10 @@ Float_t calibratorEB::GetICEnergy(const Int_t &i)
     if(ieta<0)      cout<<"ieta<0"<<endl;
     if(iphi<0)      cout<<"iphi<0"<<endl;
 #endif
-
-    IC = (xtal_[fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
+    if(ZRecHit_[i]->at(iRecHit)!=0)
+      IC=1.;
+    else
+      IC = (xtal_[fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
     E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
   }
       

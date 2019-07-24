@@ -1,4 +1,6 @@
 #include "ICmanager.h"
+#include "TMath.h"
+#include "assert.h"
 //#include "utils.h"
 
 using namespace std;
@@ -113,6 +115,10 @@ Float_t  ICmanager::GetIC(const Int_t &index)
 
 Float_t ICmanager::GetIC(const Int_t &ieta, const Int_t &iphi)
 {
+  //#ifdef DEBUG
+  assert(ieta>=ietamin_ && ieta<=ietamax_);
+  assert(iphi>=iphimin_ && iphi<=iphimax_);
+  //#endif
   return ( xtal_[ fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_) ] ).IC;
 }
 

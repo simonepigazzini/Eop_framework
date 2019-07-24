@@ -68,6 +68,12 @@ int main(int argc, char* argv[])
   {
     Eop_projection=Eop_vs_Eta->ProjectionY("_py",ieta,ieta,"");
     float Nev = Eop_projection->Integral(0,-1);//integral including underflow and overflow
+    cout<<"index"<<ieta-1
+	<<"entries"<<Eop_projection->GetEntries()
+	<<"integral"<<Eop_projection->Integral()
+	<<"integral with underoverflow"<<Nev<<endl;
+
+
     if(Nev==0)
       continue;
     for(int iEop=0 ; iEop<=Eop_vs_Eta->GetNbinsY()+1 ; ++iEop)

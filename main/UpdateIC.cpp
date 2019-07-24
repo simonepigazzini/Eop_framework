@@ -9,6 +9,8 @@
 
 using namespace std;
 
+//#define DEBUG
+
 void PrintUsage()
 {
   cerr << ">>>>> usage:  UpdateIC --oldIC <objname> <filename> --newIC <objname> <filename>" << endl;

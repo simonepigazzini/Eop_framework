@@ -96,11 +96,6 @@ int main(int argc, char* argv[])
   else
     calorimeter = new calibratorEE(config);
 
-  //////////////////////////////////////////////////////////////////////////////////////////
-  //Only for validation
-  if(EE)
-    calorimeter->SetSelection("abs(chargeEle)==1 && fabs(etaSCEle) > 1.479 && fabs(etaSCEle) < 2.5");
-  //////////////////////////////////////////////////////////////////////////////////////////
   calorimeter->PrintSettings();
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg
@@ -146,7 +141,7 @@ int main(int argc, char* argv[])
   if(!EE)
     Eop_vs_ieta = new TH2F("EopEta","EopEta", 171, -85.5, +85.5, Eopweightbins, Eopweightmin, Eopweightmax);
   else
-    Eop_vs_ieta = new TH2F("EopEta","EopEta", 39, -0.5, +38.5, Eopweightbins, Eopweightmin, Eopweightmax);
+    Eop_vs_ieta = new TH2F("EopEta","EopEta", 41, -0.5, +40.5, Eopweightbins, Eopweightmin, Eopweightmax);
 
   //loop over entries to fill the histo  
   Long64_t Nentries=calorimeter->GetEntries();
@@ -189,15 +184,26 @@ int main(int argc, char* argv[])
 	  ietaSeed=calorimeter->GetEERingSeed(iEle);
 	if(p!=0)
 	{
-	  //std::cout<<"event:"<<calorimeter->GeteventNumber()<<"\tSEED:"<<ietaSeed<<"\tE:"<<E<<"\tp:"<<p<<std::endl;   //DEBUG
+	  /*
+	    std::cout<<"event:"<<calorimeter->GeteventNumber()
+		     <<"\tSEED:"<<ietaSeed
+		     <<"\tE:"<<E
+		     <<"\tE_ES:"<<calorimeter->GetESEnergy(iEle)
+		     <<"\tpCORR:"<<p+calorimeter->GetESEnergy(iEle)
+		     <<"\tp-E_ES:"<<p
+		     <<"\tetaSC"<<calorimeter->GetEtaSC(iEle)
+		     <<std::endl; 
+	    getchar();
+	  */
 	  Eop_vs_ieta->Fill(ietaSeed,E/p);
-	  //getchar();
 	}
 	//else
 	//  cout<<"[WARNING]: p=0 for entry "<<ientry<<endl;
       }
     }
   }
+
+
 
   //save and close
   Eop_vs_ieta->Write();

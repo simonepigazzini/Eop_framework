@@ -21,6 +21,7 @@ current_dir = os.getcwd();
 ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/102X_dataRun2_Sep2018Rereco_harnessCorr_newReg/"#parent folder containing all the ntuples of interest
 #ntuple_dir="/home/fabio/work/Eop_framework/data/"
 tag_list = ["Run2018A","Run2018B","Run2018C","Run2018D","Run2018E","Run2018F"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
+#tag_list = ["118-1-da18","117-1-de08","116-1-17a7","115-1-803e","114-1-9911","113-1-bdef","112-1-6f72","11-1-d6b8","111-1-9841","110-1-e828","109-1-ad08"]
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag containing some error)
 
@@ -32,7 +33,8 @@ parser.add_option("-l", "--label",     action="store",      type="str", dest="la
 parser.add_option("-v", "--verbosity", action="store",      type="int", dest="verbosity",       default=1,          help="verbosity level")
 parser.add_option("-o", "--outdir",    action="store",      type="str", dest="outdir",          default="./",       help="output directory")
 parser.add_option("-e", "--exedir",    action="store",      type="str", dest="exedir",          default="./build/", help="executable directory")
-parser.add_option("-c", "--cfg",       action="store",      type="str", dest="configFile",                          help="template config file")
+parser.add_option("--cfgEEM",        action="store",      type="str", dest="configFileEEM",                          help="template config file")
+parser.add_option("--cfgEEP",        action="store",      type="str", dest="configFileEEP",                          help="template config file")
 parser.add_option("-N", "--Nloop",     action="store",      type="int", dest="Nloop",           default=15,         help="number of loop")
 parser.add_option("--RestartFromLoop", action="store",      type="int", dest="RestartFromLoop", default=0,          help="restart existing calibration from the given loop")
 parser.add_option('--odd',             action='store_true',             dest='odd',             default=False,      help='run only on odd entries')
@@ -54,10 +56,12 @@ additional_options = ""
 if options.EE:
     additional_options += " --EE "
 else:
-    print("setting up barrel calibration, if you want endcap calibration add the option --EE")
+    print("ERROR: this script is tuned for EE calibration")
+    sys.exit()
 
 #create outdir
-os.system("mkdir -p "+str(options.outdir))
+os.system("mkdir -p "+str(options.outdir)+"/EEP/")
+os.system("mkdir -p "+str(options.outdir)+"/EEM/")
 
 #get ntuples for the calibration
 selected_filelist,extracalibtree_filelist = findFiles.findFiles(ntuple_dir,"unmerged",tag_list,ignored_ntuples_label_list)
@@ -88,6 +92,8 @@ if len(selected_filelist)>200:
         for filename in selected_filelist:
             print filename 
 
+
+
 #create folder for the job
 job_parent_folder=current_dir+"/jobs/"+str(options.label)+"/"
 os.system("mkdir -p "+job_parent_folder)
@@ -99,87 +105,100 @@ os.system("mkdir -p "+job_parent_folder+"/log/")
 dagFilename=job_parent_folder+"/submit_manager.dag"
 dagFile = open( dagFilename,"w")
 
+
 #make the monitoring files .cfg, .sh, and .sub
 for iLoop in range(options.RestartFromLoop,options.Nloop):
     print("> Generating job for loop "+str(iLoop))
+    EElist = ["EEM","EEP"]
 
     for task in tasklist:
         if(options.verbosity>=1):
             print(">> Generating job for "+task)
+        for EEtype in EElist:
+            job_parent_folder=current_dir+"/jobs/"+str(options.label)+"/"+EEtype+"/"
+            os.system("mkdir -p "+job_parent_folder)
+            os.system("mkdir -p "+job_parent_folder+"/log/")
+            os.system("mkdir -p "+options.outdir+"/"+EEtype)
 
-        for iFile in range(0,len(selected_filelist)):
-            selected_filename=selected_filelist[iFile]
-            extracalibtree_filename=extracalibtree_filelist[iFile]
-            if(options.verbosity>=1):
-                print(">>> Generating job for file "+selected_filename)
+
+            for iFile in range(0,len(selected_filelist)):
+                selected_filename=selected_filelist[iFile]
+                extracalibtree_filename=extracalibtree_filelist[iFile]
+                if(options.verbosity>=1):
+                    print(">>> Generating job for file "+selected_filename)
                 
-            jobdir=job_parent_folder+"/job_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+task+"/"
-            os.system("mkdir "+jobdir)
+                jobdir=job_parent_folder+"/job_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+task+"/"
+                os.system("mkdir "+jobdir)
             
-            with open(str(options.configFile)) as fi:
-                contents = fi.read()
-                replaced_contents = contents.replace("SELECTED_INPUTFILE", selected_filename).replace("EXTRACALIBTREE_INPUTFILE", extracalibtree_filename)
-            cfgfilename=jobdir+"/config.cfg"
-            with open(cfgfilename, "w") as fo:
-                fo.write(replaced_contents)
-
-            for split in splitstat:
-                ##### creates executable options #######
-                BUILDEOPETA_OUTPUT= str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+split+".root"
-                UPDATEIC_OUTPUT= str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+split+".root"
-                BUILDEOPETA_INPUT_OPTION=""
-                UPDATEIC_INPUT_OPTION=""
-                EOPWEIGHTRANGE_OPTION=""
-                if iLoop==0:
-                    if "BuildEopEta" in task:
-                        BUILDEOPETA_INPUT_OPTION=""
-                        UPDATEIC_INPUT_OPTION=""
-                        if not options.EE:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.2 1.9 --Eopweightbins 204"
-                        else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
-                    if "ComputeIC" in task:
-                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
-                        UPDATEIC_INPUT_OPTION=""
-                        EOPWEIGHTRANGE_OPTION=""
+                if EEtype=="EEM":
+                    configFile=options.configFileEEM
                 else:
-                    if "BuildEopEta" in task:
-                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
-                        UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
-                        if not options.EE:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.85 1.15 --Eopweightbins 36"
-                        else:
-                            EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
+                    configFile=options.configFileEEP
+                with open(configFile) as fi:
+                    contents = fi.read()
+                    replaced_contents = contents.replace("SELECTED_INPUTFILE", selected_filename).replace("EXTRACALIBTREE_INPUTFILE", extracalibtree_filename)
+                cfgfilename=jobdir+"/config.cfg"
+                with open(cfgfilename, "w") as fo:
+                    fo.write(replaced_contents)
 
-                    if "ComputeIC" in task:
-                        BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
-                        UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root"                    
-                        EOPWEIGHTRANGE_OPTION=""
+                for split in splitstat:
+                    ##### creates executable options #######
+                    BUILDEOPETA_OUTPUT= str(options.outdir)+"/"+EEtype+"/EopEta_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+split+".root"
+                    UPDATEIC_OUTPUT= str(options.outdir)+"/"+EEtype+"/IC_loop_"+str(iLoop)+"_file_"+str(iFile)+"_"+split+".root"
+                    BUILDEOPETA_INPUT_OPTION=""
+                    UPDATEIC_INPUT_OPTION=""
+                    EOPWEIGHTRANGE_OPTION=""
+                    if iLoop==0:
+                        if "BuildEopEta" in task:
+                            BUILDEOPETA_INPUT_OPTION=""
+                            UPDATEIC_INPUT_OPTION=""
+                            if not options.EE:
+                                EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.2 1.9 --Eopweightbins 204"
+                            else:
+                                EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
+                        if "ComputeIC" in task:
+                            BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
+                            UPDATEIC_INPUT_OPTION=""
+                            EOPWEIGHTRANGE_OPTION=""
+                    else:
+                        if "BuildEopEta" in task:
+                            BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop-1)+".root"
+                            UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/"+EEtype+"/IC_loop_"+str(iLoop-1)+".root"                    
+                            if not options.EE:
+                                EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.85 1.15 --Eopweightbins 36"
+                            else:
+                                EOPWEIGHTRANGE_OPTION="--Eopweightrange 0.1 3.0 --Eopweightbins 250"                        
 
-                ##### creates script #######
-                outScriptName=jobdir+"/job_file_"+str(iFile)+"_"+split+".sh"
-                outScript = open(outScriptName,"w")
-                outScript.write("#!/bin/bash\n")
-                #outScript.write('source setup.sh\n')
-                outScript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
-                outScript.write('eval `scram runtime -sh`\n');
-                outScript.write("cd -\n");
-                outScript.write("echo $PWD\n");
-                outScript.write(
-                    str(options.exedir)+"/"+task+".exe"+
-                    " --cfg "+cfgfilename+
-                    " "+UPDATEIC_INPUT_OPTION+
-                    " "+BUILDEOPETA_INPUT_OPTION+
-                    " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
-                    " "+EOPWEIGHTRANGE_OPTION+
-                    " --ComputeIC_output "+UPDATEIC_OUTPUT+
-                    " --"+split+
-                    " "+additional_options+"\n")
-                outScript.write("echo finish\n") 
-                outScript.close();
-                os.system("chmod 777 "+outScriptName)
+                        if "ComputeIC" in task:
+                            BUILDEOPETA_INPUT_OPTION="--Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root"
+                            UPDATEIC_INPUT_OPTION="--inputIC IC "+str(options.outdir)+"/"+EEtype+"/IC_loop_"+str(iLoop-1)+".root"                    
+                            EOPWEIGHTRANGE_OPTION=""
+
+                    ##### creates script #######
+                    outScriptName=jobdir+"/job_file_"+str(iFile)+"_"+split+".sh"
+                    outScript = open(outScriptName,"w")
+                    outScript.write("#!/bin/bash\n")
+                    #outScript.write('source setup.sh\n')
+                    outScript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
+                    outScript.write('eval `scram runtime -sh`\n');
+                    outScript.write("cd -\n");
+                    outScript.write("echo $PWD\n");
+                    outScript.write(
+                        str(options.exedir)+"/"+task+".exe"+
+                        " --cfg "+cfgfilename+
+                        " "+UPDATEIC_INPUT_OPTION+
+                        " "+BUILDEOPETA_INPUT_OPTION+
+                        " --BuildEopEta_output "+BUILDEOPETA_OUTPUT+
+                        " "+EOPWEIGHTRANGE_OPTION+
+                        " --ComputeIC_output "+UPDATEIC_OUTPUT+
+                        " --"+split+
+                        " "+additional_options+"\n")
+                    outScript.write("echo finish\n") 
+                    outScript.close();
+                    os.system("chmod 777 "+outScriptName)
 
         #generate condor multijob submitfile for each task
+        job_parent_folder=job_parent_folder+"/../"
         condorsubFilename=job_parent_folder+"/submit_"+task+"_loop_"+str(iLoop)+".sub"
         condorsub = open( condorsubFilename,"w")
         condorsub.write("executable            = $(scriptname)\n")
@@ -189,7 +208,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
         condorsub.write('+JobFlavour           = "workday"\n')
         if options.tier0:
             condorsub.write('+AccountingGroup      = "group_u_CMS.CAF.ALCA"\n')
-        condorsub.write("queue scriptname matching "+job_parent_folder+"/job_loop_"+str(iLoop)+"_file_*_"+task+"/*.sh\n")
+        condorsub.write("queue scriptname matching "+job_parent_folder+"/EE*/job_loop_"+str(iLoop)+"_file_*_"+task+"/*.sh\n")
         condorsub.close()
         #fill the submitting manager file
         dagFile.write("JOB "+task+"_loop_"+str(iLoop)+" "+condorsubFilename+"\n")
@@ -202,7 +221,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
-            mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
+            mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/*/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
             mergescript.write(str(options.exedir)+"/NormalizeBuildEopEta.exe --Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root\n")
             mergescript.close()
             os.system("chmod 777 "+mergescriptName)
@@ -213,14 +232,21 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
-            mergescript.write("hadd -f "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
+            mergescript.write("hadd -f "+str(options.outdir)+"/EEM/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EEM/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
             if iLoop==0:
-                mergescript.write(str(options.exedir)+"/UpdateIC.exe --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --newIC IC "+str(options.outdir)+"/EEM/IC_loop_"+str(iLoop)+".root\n")
             else:
-                mergescript.write(str(options.exedir)+"/UpdateIC.exe --oldIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --oldIC IC "+str(options.outdir)+"/EEM/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/EEM/IC_loop_"+str(iLoop)+".root\n")
+
+            mergescript.write("hadd -f "+str(options.outdir)+"/EEP/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EEP/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
+            if iLoop==0:
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --newIC IC "+str(options.outdir)+"/EEP/IC_loop_"+str(iLoop)+".root\n")
+            else:
+                mergescript.write(str(options.exedir)+"/UpdateIC.exe --oldIC IC "+str(options.outdir)+"/EEP/IC_loop_"+str(iLoop-1)+".root --newIC IC "+str(options.outdir)+"/EEP/IC_loop_"+str(iLoop)+".root\n")
+
             mergescript.close()
             os.system("chmod 777 "+mergescriptName)
-
+        
         mergesubFilename=job_parent_folder+"/submit_merge"+task+"_loop_"+str(iLoop)+".sub"
         mergesub = open( mergesubFilename,"w")
         mergesub.write("executable            = "+mergescriptName+"\n")
