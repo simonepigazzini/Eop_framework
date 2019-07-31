@@ -25,7 +25,7 @@
 #define NEWLINE cout<<endl
 using namespace std;
 
-bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial=10, bool PrintTemplate=false, string outputFile=".");
+bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial=10, string TemplatePlotsFolder="");
 void PrintUsage()
 {
   cerr << ">>>>> usage:  CalibrationMomentum --cfg <configFileName>" << endl;
@@ -65,13 +65,13 @@ int main(int argc, char** argv)
   if( config.OptExist("Output.CalibrationMomentum_output"))
     outputFile =  config.GetOpt<string>("Output.CalibrationMomentum_output");
 
-  bool PrintTemplate = false;
-  if( config.OptExist("CalibrationMomentum.PrintTemplate"))
-    PrintTemplate =  config.GetOpt<bool>("CalibrationMomentum.PrintTemplate");
+  string TemplatePlotsFolder = "";
+  if( config.OptExist("Output.CalibrationMomentum_TemplatePlotsFolder"))
+    TemplatePlotsFolder =  config.GetOpt<string>("Output.CalibrationMomentum_TemplatePlotsFolder");
 
-  bool isEB = true;
-  if( config.OptExist("CalibrationMomentum.isEB"))
-    isEB =  config.GetOpt<bool>("CalibrationMomentum.isEB");
+  bool doEB = true;
+  if( config.OptExist("CalibrationMomentum.doEB"))
+    doEB =  config.GetOpt<bool>("CalibrationMomentum.doEB");
 
   cout << " Basic Configuration " << endl;
   cout << " nPhiBins = " << nPhiBins << endl;
@@ -84,13 +84,13 @@ int main(int argc, char** argv)
   TH1D* h_Et_Electron = new TH1D("h_Et_Electron", "h_Et_Electron", 100, 0., 100.);
   TH1D* h_phiPositron = new TH1D("h_phiPositron","h_phiPositron", nPhiBins, -TMath::Pi(), TMath::Pi());
   TH1D* h_phiElectron = new TH1D("h_phiElectron","h_phiElectron", nPhiBins, -TMath::Pi(), TMath::Pi()); 
-  TH2D* h2_Mee_PPositron_EElectron_vs_phiPositron = new TH2D("Mee_vs_phiPositron", "Mee_vs_phiPositron", 2200, 0.2, 1.6, nPhiBins, -TMath::Pi(), TMath::Pi());
-  TH2D* h2_Mee_PElectron_EPositron_vs_phiElectron = new TH2D("Mee_vs_phiElectron", "Mee_vs_phiElectron", 2200, 0.2, 1.6, nPhiBins, -TMath::Pi(), TMath::Pi());
+  TH2D* h2_Mee_PPositron_EElectron_vs_phiPositron = new TH2D("Mee_vs_phiPositron", "Mee_vs_phiPositron", nPhiBins, -TMath::Pi(), TMath::Pi(), 2200, 0.2, 1.6);
+  TH2D* h2_Mee_PElectron_EPositron_vs_phiElectron = new TH2D("Mee_vs_phiElectron", "Mee_vs_phiElectron", nPhiBins, -TMath::Pi(), TMath::Pi(), 2200, 0.2, 1.6);
 
   //**************************** loop on events
   calibrator* data;
 
-  if(isEB)
+  if(doEB)
     data = new calibratorEB(config);
   else
     data = new calibratorEE(config);
@@ -132,12 +132,38 @@ int main(int argc, char** argv)
 
     float Mee_PPositron_EElectron = data->GetMee() * sqrt( data->GetP(posPositron) / data->GetICEnergy(posPositron) ) / 91.19;
     float Mee_PElectron_EPositron = data->GetMee() * sqrt( data->GetP(posElectron) / data->GetICEnergy(posElectron) ) / 91.19;
+    //NOTE: the correction must be linear in P, therefore I will use Mee^2 to extract the scale correction
 
-    if( data->isEB(posPositron) )
-      h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron );
+    if( doEB && data->isEB(posPositron) )
+    {
+      /*
+      std::cout<<"EB";
+      if(posElectron==0)
+	std::cout<<"\tchargeEle[0]="<<data->GetCharge(0)<<" <- SELECTED"
+		 <<"\tchargeEle[1]="<<data->GetCharge(1);
+      else
+	std::cout<<"\tchargeEle[0]="<<data->GetCharge(0)
+		 <<"\tchargeEle[1]="<<data->GetCharge(1)<<" <- SELECTED";
 
-    if( data->isEB(posElectron) )
-      h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron );
+      std::cout<<"\tPhibinEB="<<h2_Mee_PPositron_EElectron_vs_phiPositron -> GetXaxis() -> FindBin(data->GetPhi(posPositron))
+	       <<"\tregionId=//"
+	       <<"\tvar="<<Mee_PPositron_EElectron
+	       <<"\tvar*var="<<Mee_PPositron_EElectron*Mee_PPositron_EElectron
+	       <<std::endl;
+      getchar();
+      */
+      h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron*Mee_PPositron_EElectron );
+    }
+    else
+      if(!doEB && !data->isEB(posPositron))
+	 h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron*Mee_PPositron_EElectron );
+
+    if(doEB && data->isEB(posElectron) )
+      h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron*Mee_PElectron_EPositron );
+    else
+      if(!doEB && !data->isEB(posElectron) )
+	h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron*Mee_PElectron_EPositron );
+
   }
 
   NEWLINE;
@@ -153,6 +179,8 @@ int main(int argc, char** argv)
   //integrating events over phi
   TH1D* h_Mee_PPositron = h2_Mee_PPositron_EElectron_vs_phiPositron -> ProjectionY("Mee_PPositron");
   TH1D* h_Mee_PElectron = h2_Mee_PElectron_EPositron_vs_phiElectron -> ProjectionY("Mee_PElectron");
+  h_Mee_PPositron -> Rebin(rebin);
+  h_Mee_PElectron -> Rebin(rebin);
   // initialize template functions
   histoFunc* templateHistoFunc_Mee_PPositron = new histoFunc((TH1F*)h_Mee_PPositron);
   histoFunc* templateHistoFunc_Mee_PElectron = new histoFunc((TH1F*)h_Mee_PElectron);
@@ -169,7 +197,7 @@ int main(int argc, char** argv)
   for(int phibin = 1; phibin <= nPhiBins; ++phibin)
   {
     cout<<"Fit progress "<<100*phibin/nPhiBins<<"\%  \r"<<flush;
-    float phi = h_Mee_PPositron->GetXaxis()->GetBinCenter(phibin);
+    float phi = h2_Mee_PPositron_EElectron_vs_phiPositron->GetXaxis()->GetBinCenter(phibin);
 
     // define the histograms to be fitted
     h_Mee_PPositron_phibin.push_back( h2_Mee_PPositron_EElectron_vs_phiPositron->ProjectionY( Form("h_Mee_PPositron_phibin%i",phibin), phibin, phibin) );
@@ -178,10 +206,17 @@ int main(int argc, char** argv)
     h_Mee_PElectron_phibin.back() -> Rebin(rebin);
 
     // define the fitting function
-    fitfunc_Mee_PPositron.push_back( new TF1(Form("f_Mee_PPositron_phibin%i",phibin), templateHistoFunc_Mee_PPositron, 0.85, 1.1, 3, "histoFunc") );
+    if(doEB)
+      fitfunc_Mee_PPositron.push_back( new TF1(Form("f_Mee_PPositron_phibin%i",phibin), templateHistoFunc_Mee_PPositron, 0.85, 1.1, 3, "histoFunc") );
+    else
+      fitfunc_Mee_PPositron.push_back( new TF1(Form("f_Mee_PPositron_phibin%i",phibin), templateHistoFunc_Mee_PPositron,  0.7, 1.1, 3, "histoFunc") );
     fitfunc_Mee_PPositron.back() -> SetParName(0, "Norm");
     fitfunc_Mee_PPositron.back() -> SetParName(1, "Scale factor");
-    fitfunc_Mee_PElectron.push_back( new TF1(Form("f_Mee_PElectron_phibin%i",phibin), templateHistoFunc_Mee_PElectron, 0.85, 1.1, 3, "histoFunc") );
+    if(doEB)
+      fitfunc_Mee_PElectron.push_back( new TF1(Form("f_Mee_PElectron_phibin%i",phibin), templateHistoFunc_Mee_PElectron, 0.85, 1.1, 3, "histoFunc") );
+    else
+      fitfunc_Mee_PElectron.push_back( new TF1(Form("f_Mee_PElectron_phibin%i",phibin), templateHistoFunc_Mee_PElectron,  0.7, 1.1, 3, "histoFunc") );
+
     fitfunc_Mee_PElectron.back() -> SetParName(0, "Norm");
     fitfunc_Mee_PElectron.back() -> SetParName(1, "Scale factor");
 
@@ -199,7 +234,7 @@ int main(int argc, char** argv)
 
     //fit positron correction
     //cout << "***** Positron ";
-    bool goodFit = PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), 10);
+    bool goodFit = PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), 10, TemplatePlotsFolder);
     if(goodFit)
     {
       ++Ngoodfits;
@@ -211,7 +246,7 @@ int main(int argc, char** argv)
     }
     else
     {
-      Nbadfits;
+      ++Nbadfits;
       //cout << "fit BAD   ";
       g_PositronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1.);
       g_PositronCorrection_vs_phi -> SetPointError(phibin-1, 0., 0.01);
@@ -276,7 +311,7 @@ int main(int argc, char** argv)
 
 }
 
-bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial, bool PrintTemplate, string outputFile)
+bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial, string TemplatePlotsFolder)
 {
   TFitResultPtr rp;
   int fStatus;
@@ -289,11 +324,16 @@ bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial, bool PrintTemplate, stri
   {
     c_template_fit.cd();
     rp = h -> Fit(fitfunc, "QRL+");
-    if(PrintTemplate)
-      c_template_fit.Print( Form("%s/fit_%s.png",outputFile.c_str(), h->GetName()) );
     fStatus = rp;
     if(fStatus != 4 && fitfunc->GetParError(1) != 0. )
+    {
+      if(TemplatePlotsFolder!="")
+	c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
       return true;
+    }
   }
+  if(TemplatePlotsFolder!="")
+    c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
+
   return false;
 }
