@@ -36,6 +36,7 @@ class ECALELFInterface
   Long64_t            GetEntry           (const Long64_t &i);
   Bool_t              isSelected         (const Int_t &i)                                         {return selection_->EvalInstance(i);}
   Bool_t              isEB               (const Int_t &i);
+  Bool_t              isEE               (const Int_t &i);
   Float_t             GetEnergy          (const Int_t &i)                                         {return energySCEle_[i];}
   Float_t             GetCharge          (const Int_t &i)                                         {return chargeEle_[i];}
   Float_t             GetMee             ()                                                       {return Mee_; };

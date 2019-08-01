@@ -130,6 +130,13 @@ Bool_t  ECALELFInterface::isEB(const Int_t &i)
   return false;
 }
 
+Bool_t  ECALELFInterface::isEE(const Int_t &i)
+{
+  if(fabs(etaSCEle_[i])>1.479 && fabs(etaSCEle_[i])<2.5)
+    return true;
+  return false;
+}
+
 void ECALELFInterface::GetSeed(Int_t &ix, Int_t &iy, const Int_t &i)
 {
   ix=xSeed_[i];

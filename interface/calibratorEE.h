@@ -33,8 +33,8 @@ class calibratorEE : public calibrator
   Float_t  GetICEnergy(const Int_t &i);
   
  private:
-  TEndcapRings* eeRing_;//for now useless but maybe useful in the future
-
+  TEndcapRings* eeRing_; //for now useless but maybe useful in the future
+  bool EScorrection_;    //if true, correct energy and momentum for preshower effect. By default it should be true for intercalibration and false for momentum calibration and monitoring. The effectiveness of this correction should be actually studied in future...
 };
 
 #endif

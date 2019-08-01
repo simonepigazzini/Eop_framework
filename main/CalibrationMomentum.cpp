@@ -125,7 +125,7 @@ int main(int argc, char** argv)
       else
       {
 #ifdef DEBUG
-	cerr<<"[ERROR]: charge values different from (-1,+1) or (+1,-1) --> SKIP EVENT"<<endl;
+	cerr<<"[INFO]: charge values different from (-1,+1) or (+1,-1) --> SKIP EVENT"<<endl;
 #endif
 	continue;
       }
@@ -133,6 +133,8 @@ int main(int argc, char** argv)
     float Mee_PPositron_EElectron = data->GetMee() * sqrt( data->GetP(posPositron) / data->GetICEnergy(posPositron) ) / 91.19;
     float Mee_PElectron_EPositron = data->GetMee() * sqrt( data->GetP(posElectron) / data->GetICEnergy(posElectron) ) / 91.19;
     //NOTE: the correction must be linear in P, therefore I will use Mee^2 to extract the scale correction
+
+
 
     if( doEB && data->isEB(posPositron) )
     {
@@ -155,15 +157,35 @@ int main(int argc, char** argv)
       h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron*Mee_PPositron_EElectron );
     }
     else
-      if(!doEB && !data->isEB(posPositron))
-	 h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron*Mee_PPositron_EElectron );
+      if(!doEB && data->isEE(posPositron))
+      {
+	/*
+	std::cout<<"EE";
+	if(posElectron==0)
+	  std::cout<<"\tchargeEle[0]="<<data->GetCharge(0)<<" <- SELECTED"
+		   <<"\tchargeEle[1]="<<data->GetCharge(1);
+	else
+	  std::cout<<"\tchargeEle[0]="<<data->GetCharge(0)
+		   <<"\tchargeEle[1]="<<data->GetCharge(1)<<" <- SELECTED";
+	
+	std::cout<<"\tPhibinEE="<<h2_Mee_PPositron_EElectron_vs_phiPositron -> GetXaxis() -> FindBin(data->GetPhi(posPositron))
+		 <<"\tregionId=//"
+		 <<"\tE[positron]="<<data->GetICEnergy(posPositron)
+		 <<"\tp[positron]="<<data->GetP(posPositron)
+		 <<"\tMee="<<data->GetMee()
+		 <<"\tvar="<<Mee_PPositron_EElectron
+		 <<"\tvar*var="<<Mee_PPositron_EElectron*Mee_PPositron_EElectron
+		 <<std::endl;
+	getchar();
+	*/
+	h2_Mee_PPositron_EElectron_vs_phiPositron -> Fill( data->GetPhi(posPositron) , Mee_PPositron_EElectron*Mee_PPositron_EElectron );
+      }
 
     if(doEB && data->isEB(posElectron) )
       h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron*Mee_PElectron_EPositron );
     else
-      if(!doEB && !data->isEB(posElectron) )
+      if(!doEB && data->isEE(posElectron) )
 	h2_Mee_PElectron_EPositron_vs_phiElectron -> Fill( data->GetPhi(posElectron) , Mee_PElectron_EPositron*Mee_PElectron_EPositron );
-
   }
 
   NEWLINE;
@@ -241,15 +263,15 @@ int main(int argc, char** argv)
       //cout << "fit OK    ";
       double k = fitfunc_Mee_PPositron.back()->GetParameter(1);
       double eee = fitfunc_Mee_PPositron.back()->GetParError(1);
-      g_PositronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1./k);
-      g_PositronCorrection_vs_phi -> SetPointError(phibin-1, 0., eee/k/k);
+      g_PositronCorrection_vs_phi -> SetPoint(phibin, phi, 1./k);
+      g_PositronCorrection_vs_phi -> SetPointError(phibin, 0., eee/k/k);
     }
     else
     {
       ++Nbadfits;
       //cout << "fit BAD   ";
-      g_PositronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1.);
-      g_PositronCorrection_vs_phi -> SetPointError(phibin-1, 0., 0.01);
+      g_PositronCorrection_vs_phi -> SetPoint(phibin, phi, 1.);
+      g_PositronCorrection_vs_phi -> SetPointError(phibin, 0., 0.01);
     }
     //NEWLINE;
 
@@ -262,23 +284,51 @@ int main(int argc, char** argv)
       //cout << "fit OK    ";
       double k = fitfunc_Mee_PElectron.back()->GetParameter(1);
       double eee = fitfunc_Mee_PElectron.back()->GetParError(1);
-      g_ElectronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1./k);
-      g_ElectronCorrection_vs_phi -> SetPointError(phibin-1, 0., eee/k/k);
+      g_ElectronCorrection_vs_phi -> SetPoint(phibin, phi, 1./k);
+      g_ElectronCorrection_vs_phi -> SetPointError(phibin, 0., eee/k/k);
     }
     else
     {
       ++Nbadfits;
       //cout << "fit BAD   ";
-      g_ElectronCorrection_vs_phi -> SetPoint(phibin-1, phi, 1.);
-      g_ElectronCorrection_vs_phi -> SetPointError(phibin-1, 0., 0.01);
+      g_ElectronCorrection_vs_phi -> SetPoint(phibin, phi, 1.);
+      g_ElectronCorrection_vs_phi -> SetPointError(phibin, 0., 0.01);
     }
     //NEWLINE;
   }
-
   NEWLINE;
   cout<<"Fit summary:"<<endl;
   cout<<"\t"<<Ngoodfits<<" GOOD fits"<<endl;
   cout<<"\t"<<Nbadfits<<" BAD fits"<<endl;
+
+  //first point is slightly larger than -pi and last point slightly smaller than +pi 
+  // --> use the following trick in order to guarantee full coverage
+  double phi_underflow = h2_Mee_PPositron_EElectron_vs_phiPositron->GetXaxis()->GetBinCenter( 0 );
+  double phi_overflow  = h2_Mee_PPositron_EElectron_vs_phiPositron->GetXaxis()->GetBinCenter( nPhiBins+1 );
+  double phi_lastbin, pcorr_lastbin, err_pcorr_lastbin, phi_firstbin, pcorr_firstbin, err_pcorr_firstbin;
+
+  //copy pcorr(-pi+epsilon) in pcorr(pi+epsilon)
+  g_PositronCorrection_vs_phi -> GetPoint( 1 ,        phi_firstbin , pcorr_firstbin );
+  err_pcorr_firstbin = g_PositronCorrection_vs_phi -> GetErrorX(1);
+  g_PositronCorrection_vs_phi -> SetPoint( nPhiBins+1 , phi_overflow , pcorr_firstbin );
+  g_PositronCorrection_vs_phi -> SetPointError(nPhiBins+1 , 0., err_pcorr_firstbin );
+  //copy pcorr(pi-epsilon) in pcorr(-pi-epsilon)
+  g_PositronCorrection_vs_phi -> GetPoint( nPhiBins , phi_lastbin  , pcorr_lastbin  );
+  err_pcorr_lastbin = g_PositronCorrection_vs_phi -> GetErrorX(nPhiBins);
+  g_PositronCorrection_vs_phi -> SetPoint( 0 , phi_underflow , pcorr_lastbin );
+  g_PositronCorrection_vs_phi -> SetPointError(0 , 0., err_pcorr_lastbin );
+
+  //copy pcorr(-pi+epsilon) in pcorr(pi+epsilon)
+  g_ElectronCorrection_vs_phi -> GetPoint( 1 ,        phi_firstbin , pcorr_firstbin );
+  err_pcorr_firstbin = g_ElectronCorrection_vs_phi -> GetErrorX(1);
+  g_ElectronCorrection_vs_phi -> SetPoint( nPhiBins+1 , phi_overflow , pcorr_firstbin );
+  g_ElectronCorrection_vs_phi -> SetPointError(nPhiBins+1 , 0., err_pcorr_firstbin );
+  //copy pcorr(pi-epsilon) in pcorr(-pi-epsilon)
+  g_ElectronCorrection_vs_phi -> GetPoint( nPhiBins , phi_lastbin  , pcorr_lastbin  );
+  err_pcorr_lastbin = g_ElectronCorrection_vs_phi -> GetErrorX(nPhiBins);
+  g_ElectronCorrection_vs_phi -> SetPoint( 0 , phi_underflow , pcorr_lastbin );
+  g_ElectronCorrection_vs_phi -> SetPointError(0 , 0., err_pcorr_lastbin );
+
   
   //-------
   // Output
