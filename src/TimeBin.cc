@@ -1,4 +1,5 @@
 #include "TimeBin.h"
+#include "TMath.h"
 
 using namespace std;
 
@@ -114,8 +115,7 @@ void TimeBin::TimeBin::BranchOutput(TTree* outtree)
   for(map<string,float>::iterator it=variablelist_.begin(); it!=variablelist_.end(); ++it)
   {
     string variablename  = it->first;
-    float variablevalue = it->second;
-    outtree->Branch(variablename.c_str(), &variablevalue);
+    outtree->Branch(variablename.c_str(), &variablelist_[variablename]);
   }
 }
 
@@ -148,12 +148,21 @@ void TimeBin::TimeBin::BranchInput(TTree* intree)
 
 bool TimeBin::TimeBin::Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const
 {
-
-  if(time>timemin_ && time<timemax_)
-    if(run>runmin_ && run<runmax_)
-      if(ls>lsmin_ && ls<lsmax_)
+  //cout<<"try to match "<<time<<" in "<<"("<<timemin_<<","<<timemax_<<")"<<endl;
+  if(time>=timemin_ && time<=timemax_)
+  {
+    //cout<<"try to match "<<run<<" in "<<"("<<runmin_<<","<<runmax_<<")"<<endl;
+    if(run>=runmin_ && run<=runmax_)
+    {
+      //cout<<"try to match "<<ls<<" in "<<"("<<lsmin_<<","<<lsmax_<<")"<<endl;
+      if(ls>=lsmin_ && ls<=lsmax_)
+      {
+	//cout<<"match"<<endl;
 	return true;
-
+      }
+    }
+  }
+  //cout<<"NO match"<<endl;
   return false;
 
 }
@@ -168,3 +177,40 @@ bool TimeBin::TimeBin::InitHisto( char* name, char* title, const int &Nbin, cons
   else
     return false;
 }
+
+
+double TimeBin::TimeBin::GetMean()
+{
+  if(!h_scale_)
+    cerr<<"[ERROR]: histogram is not booked"<<endl;
+
+  return h_scale_->GetMean();
+}
+
+
+double TimeBin::TimeBin::GetMedian()
+{
+  if(!h_scale_)
+    cerr<<"[ERROR]: histogram is not booked"<<endl;
+
+  //The median is just the 0.5 quantile
+  Double_t x, q;
+  q = 0.5; // 0.5 for "median"
+  h_scale_->ComputeIntegral(); // just a precaution
+  h_scale_->GetQuantiles(1, &x, &q);
+  return x;
+}
+
+void TimeBin::TimeBin::SetVariable(const std::string &variablename, const float &variablevalue)
+{
+  cout<<"setting variablelist_["<<variablename<<"]="<<variablevalue<<endl;
+  variablelist_[variablename] = variablevalue;
+}
+
+void TimeBin::TimeBin::PrintVariables()
+{
+  for(map<string,float>::iterator it=variablelist_.begin(); it!=variablelist_.end(); ++it)
+    cout<<it->first<<endl;
+
+}
+

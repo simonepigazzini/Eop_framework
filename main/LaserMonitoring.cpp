@@ -59,25 +59,29 @@ int main(int argc, char* argv[])
   }
 
   if(runDivide)
+  {
+    string outputfilename = config.GetOpt<string> ("LaserMonitoring.RunDivide.output");
     monitor.RunDivide();
+    cout<<">> Saving timebins to "<<outputfilename<<endl;
+    monitor.SaveTimeBins(outputfilename);
+  }
 
   if(scaleMonitor)
   {
     monitor.LoadTimeBins();
 
-    //fill the histos (one histo per time bin per variable) 
+    //fill the histos (one histo per time bin) 
     monitor.FillTimeBins();
 
-    /*
     //perform the monitoring, i.e., estrapolate a scale value with the specified method per time bin per variable
     vector<string> MonitoredScales = config.GetOpt<vector<string> > ("LaserMonitoring.scaleMonitor.MonitoredScales");
     for(auto scale : MonitoredScales)
     {
       TString method = config.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.method",scale.c_str()));
       method.ToLower(); //convert capital letters to lower case to avoid mis-understanding
-      if(method=="templatefit")
-	monitor.RunTemplateFit(scale);
-      else
+      //if(method=="templatefit")
+      //monitor.RunTemplateFit(scale);
+      //else
 	if(method=="mean")
 	  monitor.RunComputeMean(scale);
 	else
@@ -89,15 +93,22 @@ int main(int argc, char* argv[])
 	    return -1;
 	  }
     }
+    cout<<"loaded+produced scales are:"<<endl;
+    monitor.PrintScales();
+
+    
     //save the output
-    string outfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
-    string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
-    TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
-    monitor.SaveScales(outfile);
-    if(saveHistos)
-      monitor.saveHistos(outfile);
-    outfile->Close();
-    */
+    string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
+    cout<<">> Saving timebins to "<<outputfilename<<endl;
+    monitor.SaveTimeBins(outputfilename);
+
+    //string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
+    //TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
+    //monitor.SaveScales(outfile);
+    //if(saveHistos)
+    //monitor.saveHistos(outfile);
+    //outfile->Close();
+    
   }//end scaleMonitor
   
   return 0;

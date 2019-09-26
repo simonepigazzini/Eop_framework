@@ -45,7 +45,6 @@ void  MonitoringManager::RunDivide()
   cout<<">> Running RunDivide"<<endl;
   int    Nevmax_bin     = conf_.GetOpt<int>          ("LaserMonitoring.RunDivide.Nevmax_bin");
   float  maxduration    = 60*60*conf_.GetOpt<float>  ("LaserMonitoring.RunDivide.maxduration");//It is provided in hours
-  string outputfilename = conf_.GetOpt<string>       ("LaserMonitoring.RunDivide.output");
 
   //Loop on events to create a map with key=(run,LS) and value=(time0,timef,multiplicity)
   //Exploit methods inherited from ECALELFInterface to access the ntuple content
@@ -142,8 +141,6 @@ void  MonitoringManager::RunDivide()
     timebins.push_back(bin);
   }
   std::sort(timebins.begin(), timebins.end());
-  cout<<">> Saving timebins to "<<outputfilename<<endl;
-  SaveTimeBins(outputfilename);
 
 }
 
@@ -202,6 +199,7 @@ void  MonitoringManager::LoadTimeBins(std::string option)
   std::sort(timebins.begin(), timebins.end());//It should be already ordered, just for security
   cout<<">> Loaded "<<timebins.size()<<" bins"<<endl;
   inputfile->Close();
+  last_accessed_bin_=timebins.end();
 }
 
 bool MonitoringManager::BookHistos()
@@ -234,10 +232,13 @@ void  MonitoringManager::FillTimeBins()
     this->GetEntry(ientry);
     if(ientry%100000==0)
       cout<<"reading entry "<<ientry<<"\r"<<std::flush;
+
     for(int iEle=0; iEle<2; ++iEle)
     {
       if(this->isSelected(iEle))
       {
+	//cout<<"selected - "<<"run="<<this->GetRunNumber()<<"\tLS="<<this->GetLS()<<"\tT="<<this->GetTime()<<endl;
+	
 	auto bin_iterator = FindBin(this->GetRunNumber(),this->GetLS(),this->GetTime());
 	if(bin_iterator!=timebins.end())
 	  bin_iterator->FillHisto( variable->EvalInstance(iEle) );
@@ -252,12 +253,14 @@ void  MonitoringManager::FillTimeBins()
 
 std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time)
 {
+  //cout<<"finding bin"<<endl;
   //usually events are in the same time bin of the previous iteration or in adjacent timebins so i start to look for them from there
   std::vector<TimeBin::TimeBin>::iterator it_end   = timebins.end();
   std::vector<TimeBin::TimeBin>::iterator it_begin = timebins.begin();
 
   if(last_accessed_bin_!=it_end)
   {
+    //cout<<"last_accessed_bin_!=it_end"<<endl;
     if(last_accessed_bin_ -> Match(run,ls,time))
       return last_accessed_bin_;
 
@@ -276,9 +279,11 @@ std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t 
        }
   }    
   //if I am here, unfortunately I have to perform a search through the entire set
+  //cout<<"last_accessed_bin_=it_end"<<endl;
   for(std::vector<TimeBin::TimeBin>::iterator it_bin = it_begin; it_bin<it_end; ++it_bin)//not the smarter way considering that the bins are ordered --> can be improved
     if(it_bin -> Match(run,ls,time))
     {
+      //cout<<"match with bin "<<it_bin-it_begin<<endl;
       last_accessed_bin_=it_bin;
       return (last_accessed_bin_);
     }
@@ -290,3 +295,31 @@ std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t 
 	     
 		 
 	  
+void  MonitoringManager::RunComputeMean(string scale)
+{
+  cout<<">> RunComputeMean in function"<<endl;
+  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  {
+    //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
+    it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
+  }
+}
+
+	  
+void  MonitoringManager::RunComputeMedian(string scale)
+{
+  cout<<">> RunComputeMedian in function"<<endl;
+  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  {
+    //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
+    it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
+  }
+}
+
+void  MonitoringManager::PrintScales()
+{
+  auto firstbin=timebins.begin();
+  
+}
+
+

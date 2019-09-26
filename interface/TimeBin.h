@@ -61,14 +61,14 @@ class TimeBin
   bool     Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const;
   void     FillHisto(double x) const {h_scale_->Fill(x);} ;
   bool     InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax);
-  //double GetMean();
+  double   GetMean();
   //double GetMean(double xmin, double xmax);
   //double GetMean(double evfraction);
-  //double GetMedian();
+  double   GetMedian();
   //void   SaveAs(std::string outputfilename);  
-  //void   SetVariable(const std::string &variablename, const std::string &variablevalue);
-  //float  GetVariable(const std::string &variablename);
-  
+  void     SetVariable(const std::string &variablename, const float &variablevalue);
+  float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
+  void     PrintVariables();  
  protected:
   UInt_t runmin_;
   UInt_t runmax_;
@@ -76,9 +76,9 @@ class TimeBin
   UShort_t lsmax_;
   UInt_t timemin_;
   UInt_t timemax_;
-  mutable int Nev_;
-  mutable TH1F* h_scale_;//in this way if I define a std::set<TimeBin>, I can modify the histo content 
-  mutable std::map<std::string,float> variablelist_;//in this way if I define a std::set<TimeBins>, I can modify the map content
+  int Nev_;
+  TH1F* h_scale_;//in this way if I define a std::set<TimeBin>, I can modify the histo content 
+  std::map<std::string,float> variablelist_;//in this way if I define a std::set<TimeBins>, I can modify the map content
 
   //private:
   //void BranchInputTree();
