@@ -3,12 +3,18 @@
 using namespace std;
 
 calibratorEE::calibratorEE(CfgManager conf):
-  calibrator(conf)
+  calibrator(conf),
+  EScorrection_(false)
 {
   //-------------------------------------
   //initialize EEring
   string EEringsFileName = conf.GetOpt<string> ("Input.eeringsFileName");
   eeRing_ = new TEndcapRings(EEringsFileName);
+  if(conf.OptExist("Input.EScorrection"))
+    EScorrection_ = conf.GetOpt<bool>("Input.EScorrection");
+  else
+    cout<<"[WARNING]: option Input.EScorrection NOT found --> set "<<EScorrection_ <<" by default"<<endl;
+
 }
 
 calibratorEE::~calibratorEE()
@@ -28,7 +34,7 @@ Float_t calibratorEE::GetPcorrected(const Int_t &i)
 #endif
   if(chargeEle_[i]==-1)
   {
-    float pCORR = pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]) - esEnergySCEle_[i];
+    float pCORR = pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]) - EScorrection_*esEnergySCEle_[i];
     if(pCORR>0)
       return pCORR;
     else
@@ -36,7 +42,7 @@ Float_t calibratorEE::GetPcorrected(const Int_t &i)
   }
   if(chargeEle_[i]==+1)
   {
-    float pCORR= pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]) - esEnergySCEle_[i];
+    float pCORR= pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]) - EScorrection_*esEnergySCEle_[i];
     if(pCORR>0)
       return pCORR;
     else
@@ -49,7 +55,7 @@ Float_t calibratorEE::GetICEnergy(const Int_t &i)
 {
   float kRegression=1;
   if(useRegression_)
-    kRegression=energySCEle_[i]/(rawEnergySCEle_[i]+esEnergySCEle_[i]);
+    kRegression=energySCEle_[i]/(rawEnergySCEle_[i]+EScorrection_*esEnergySCEle_[i]);
   float E=0;
   float IC = 1.;
   int ix,iy;
@@ -80,5 +86,5 @@ Float_t calibratorEE::GetICEnergy(const Int_t &i)
 
 Float_t calibratorEE::GetRegression(const Int_t &i) 
 {
-  return energySCEle_[i]/(rawEnergySCEle_[i]+esEnergySCEle_[i]);
+  return energySCEle_[i]/(rawEnergySCEle_[i]+EScorrection_*esEnergySCEle_[i]);
 }
