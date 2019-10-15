@@ -25,11 +25,12 @@ void ParseCSVline(ifstream &brilfile, vector<string> &parsedline)
   }
 }
 
-void BuildLumiGraph(TString begin="03/20/18 00:00:00", TString end="", TString outfilename="./intlumi_vs_time2018.root")
+void BuildLumiGraph(string begin="03/20/18 00:00:00", string end="", TString outfilename="./intlumi_vs_time2016.root")
 {
   //produce the brilcalc file and put it in /tmp/fmonti/lumi.dat  
   string makedir_command = "mkdir /tmp/fmonti";
-  string brilcalc_command = "brilcalc lumi --begin \"03/20/18 00:00:00\" --output-style tab -o /tmp/fmonti/lumi.dat --tssec  --byls -b \'STABLE BEAMS\' ";
+  //string brilcalc_command = "brilcalc lumi --begin \"03/20/18 00:00:00\" --output-style tab -o /tmp/fmonti/lumi.dat --tssec  --byls -b \'STABLE BEAMS\' ";
+  string brilcalc_command = "brilcalc lumi --begin \""+begin+"\" --end \""+end+"\" --output-style tab -o /tmp/fmonti/lumi.dat --tssec  --byls -b \'STABLE BEAMS\' ";
   cout<<makedir_command<<endl;
   system(makedir_command.c_str());
   cout<<brilcalc_command<<endl;

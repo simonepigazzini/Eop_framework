@@ -18,9 +18,10 @@ print("-------------------------------------------------------------------------
 
 #parameters
 current_dir = os.getcwd();
-ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/102X_dataRun2_Sep2018Rereco_harnessCorr_newReg/"#parent folder containing all the ntuples of interest
+ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/103X_dataRun2_v6_ULBaseForICs_newRegV1/"#parent folder containing all the ntuples of interest
+#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/102X_dataRun2_Sep2018Rereco_harnessCorr_newReg/"
 #ntuple_dir="/home/fabio/work/Eop_framework/data/"
-tag_list = ["Run2018A","Run2018B","Run2018C","Run2018D","Run2018E","Run2018F"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
+tag_list = ["Run2016B","Run2016C","Run2016D","Run2016E","Run2016F","Run2016G","Run2016H"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
 #tag_list = ["Run2017C"] #tag for the monitoring
 ignored_ntuples_label_list = ["obsolete"]#ntuples containing anywhere in the path these labels will be ignored (eg ntuples within a tag containing some error)
 

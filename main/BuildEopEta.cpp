@@ -206,9 +206,13 @@ int main(int argc, char* argv[])
 
 
   //save and close
-  Eop_vs_ieta->Write();
+  //if something goes wrong with I/O (usually eos problems) returns failure 
+  if(!outFile->cd())
+    return -1;
+  if(Eop_vs_ieta->Write()<=0)
+    return -1;
+
   outFile->Close();
   delete calorimeter;
-
   return 0;
 }

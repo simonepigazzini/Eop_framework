@@ -225,11 +225,18 @@ int main(int argc, char* argv[])
   h2_temporaryIC->SetTitle("temporaryIC");
 
   //save and close
-  outFile->cd();
-  h2_numerator->Write();
-  h2_denominator->Write();
-  h2_ICpull->Write();
-  h2_temporaryIC->Write();
+  //if something goes wrong with I/O (usually eos problems) returns failure 
+  if(!outFile->cd())
+    return -1;
+  if(h2_numerator->Write()<=0)
+    return -1;
+  if(h2_denominator->Write()<=0)
+    return -1;
+  if(h2_ICpull->Write()<=0)
+    return -1;
+  if(h2_temporaryIC->Write()<=0)
+    return -1;
+
   outFile->Close();
 
   delete calorimeter;

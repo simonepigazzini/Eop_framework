@@ -56,27 +56,51 @@ int main(int argc, char **argv)
   CfgManager config;
   config.ParseConfigFile(argv[1]);
 
-  string inFileName = config.GetOpt<string> ("Input.inFileName");
+
 
   bool isEB = true;
   if(config.OptExist("Input.isEB"))
     isEB = config.GetOpt<bool>("Input.isEB");
- 
-  bool onlyW = false;
-  if(config.OptExist("Input.onlyW"))
-    onlyW = config.GetOpt<bool>("Input.onlyW");
 
   int evalStat = true;
   if(config.OptExist("Input.evalStat"))
     evalStat = config.GetOpt<int>("Input.evalStat");
 
+  string inFileName="";
   string inFileNameEven = "NULL";
   string inFileNameOdd = "NULL";
-  if( evalStat )
+  string inFileNameEEM="";
+  string inFileNameEEMEven = "NULL";
+  string inFileNameEEMOdd = "NULL";
+  string inFileNameEEP="";
+  string inFileNameEEPEven = "NULL";
+  string inFileNameEEPOdd = "NULL";
+
+  if(isEB)
   {
-    inFileNameEven = config.GetOpt<string>("Input.inFileNameEven");
-    inFileNameOdd = config.GetOpt<string>("Input.inFileNameOdd");
+    inFileName = config.GetOpt<string> ("Input.inFileName");
+    if( evalStat )
+    {
+      inFileNameEven = config.GetOpt<string>("Input.inFileNameEven");
+      inFileNameOdd  = config.GetOpt<string>("Input.inFileNameOdd");
+    }
   }
+  else
+  {
+    inFileNameEEM = config.GetOpt<string> ("Input.inFileNameEEM");
+    inFileNameEEP = config.GetOpt<string> ("Input.inFileNameEEP");
+    if( evalStat )
+    {
+      inFileNameEEMEven = config.GetOpt<string>("Input.inFileNameEEMEven");
+      inFileNameEEMOdd  = config.GetOpt<string>("Input.inFileNameEEMOdd");
+      inFileNameEEPEven = config.GetOpt<string>("Input.inFileNameEEPEven");
+      inFileNameEEPOdd  = config.GetOpt<string>("Input.inFileNameEEPOdd");
+    }
+  }
+ 
+  bool onlyW = false;
+  if(config.OptExist("Input.onlyW"))
+    onlyW = config.GetOpt<bool>("Input.onlyW");
 
   string EEgeometryFile="./data/existingEE.root";
   if(config.OptExist("Input.EEgeometryFile"))
@@ -161,15 +185,6 @@ int main(int argc, char **argv)
   // Build the precision vs ieta plot starting from the TH2F of IC
   //--------------------------------------------------------------
 
-  // open files
-  TFile* inFile = new TFile(inFileName.c_str(), "READ");
-  TFile* inFileEven = new TFile();
-  TFile* inFileOdd = new TFile();
-  if( evalStat )
-  {
-    inFileEven = new TFile(inFileNameEven.c_str(), "READ");
-    inFileOdd  = new TFile(inFileNameOdd.c_str(), "READ");
-  }
 
   std::map<int, TH2F*> h2_corrP;
   std::map<int, TH2F*> h2_IC_corr;
@@ -191,7 +206,10 @@ int main(int argc, char **argv)
 
   if( isEB == true )
   {
-    h2_IC_raw[0] = (TH2F*)( inFile->Get("h_scale_EB") );
+    // open files
+    TFile* inFile = new TFile(inFileName.c_str(), "READ");
+    h2_IC_raw[0] = (TH2F*)( inFile->Get("IC") );
+    h2_IC_raw[0] ->SetDirectory(0);
     h2_IC_raw_phiNorm[0] = (TH2F*)( h2_IC_raw[0]->Clone("h2_IC_raw_phiNorm_EB") );
     h2_IC_raw_phiNorm[0] -> Reset("ICEMS");
     h2_IC_raw_phiNorm[0] -> ResetStats();
@@ -201,11 +219,17 @@ int main(int argc, char **argv)
     h2_IC_crackCorr_phiNorm[0] = (TH2F*)( h2_IC_raw[0]->Clone("h2_IC_crackCorr_phiNorm_EB") );
     h2_IC_crackCorr_phiNorm[0] -> Reset("ICEMS");
     h2_IC_crackCorr_phiNorm[0] -> ResetStats();
+    inFile->Close();
 
     if( evalStat )
     {
-      h2_ICEven_raw[0] = (TH2F*)( inFileEven->Get("h_scale_EB") );
-      h2_ICOdd_raw[0]  = (TH2F*)( inFileOdd ->Get("h_scale_EB") );
+      TFile* inFileEven = new TFile(inFileNameEven.c_str(), "READ");
+      TFile* inFileOdd = new TFile(inFileNameOdd.c_str(), "READ");
+
+      h2_ICEven_raw[0] = (TH2F*)( inFileEven->Get("IC") );
+      h2_ICOdd_raw[0]  = (TH2F*)( inFileOdd ->Get("IC") );
+      h2_ICEven_raw[0] ->SetDirectory(0);
+      h2_ICOdd_raw[0] ->SetDirectory(0);
 
       h2_IC_raw_phiNorm_even[0] = (TH2F*)( h2_ICEven_raw[0]->Clone("h2_IC_raw_phiNorm_even_EB") );
       h2_IC_raw_phiNorm_even[0] -> Reset("ICEMS");
@@ -222,13 +246,24 @@ int main(int argc, char **argv)
       h2_IC_crackCorr_phiNorm_odd[0] = (TH2F*)( h2_ICOdd_raw[0]->Clone("h2_IC_crackCorr_phiNorm_odd_EB") );
       h2_IC_crackCorr_phiNorm_odd[0] -> Reset("ICEMS");
       h2_IC_crackCorr_phiNorm_odd[0] -> ResetStats();
+
+      inFileEven->Close();
+      inFileOdd->Close();
+
     }
+
   }
   else//then it is endcap
   {
-    h2_IC_raw[-1] = (TH2F*)( inFile->Get("h_scale_EB") );//to be fixed to run separately EEp or EEm
-    h2_IC_raw[1]  = (TH2F*)( inFile->Get("h_scale_EB") );
-    
+    // open files
+    TFile* inFileEEM = new TFile(inFileNameEEM.c_str(), "READ");
+    TFile* inFileEEP = new TFile(inFileNameEEP.c_str(), "READ");
+
+    h2_IC_raw[-1] = (TH2F*)( inFileEEM->Get("IC") );//to be fixed to run separately EEp or EEm
+    h2_IC_raw[1]  = (TH2F*)( inFileEEP->Get("IC") );
+    h2_IC_raw[-1]->SetDirectory(0);
+    h2_IC_raw[1]->SetDirectory(0);
+
     h2_IC_raw_phiNorm[-1] = (TH2F*)( h2_IC_raw[-1]->Clone("h2_IC_raw_phiNorm_EEM") );
     h2_IC_raw_phiNorm[1]  = (TH2F*)( h2_IC_raw[1] ->Clone("h2_IC_raw_phiNorm_EEP") );
     h2_IC_raw_phiNorm[-1] -> Reset("ICEMS");
@@ -250,12 +285,25 @@ int main(int argc, char **argv)
     h2_IC_corr[-1] -> ResetStats();
     h2_IC_corr[1]  -> ResetStats();
 
+    inFileEEM->Close();
+    inFileEEP->Close();
+
     if( evalStat )
     {
-      h2_ICEven_raw[-1] = (TH2F*)( inFileEven->Get("h_scale_EB") );
-      h2_ICEven_raw[1]  = (TH2F*)( inFileEven->Get("h_scale_EB") );
-      h2_ICOdd_raw[-1 ] = (TH2F*)( inFileOdd ->Get("h_scale_EB") );
-      h2_ICOdd_raw[1]   = (TH2F*)( inFileOdd ->Get("h_scale_EB") );
+      TFile* inFileEEMEven = new TFile(inFileNameEEMEven.c_str(), "READ");
+      TFile* inFileEEMOdd = new TFile(inFileNameEEMOdd.c_str(), "READ");
+      TFile* inFileEEPEven = new TFile(inFileNameEEPEven.c_str(), "READ");
+      TFile* inFileEEPOdd = new TFile(inFileNameEEPOdd.c_str(), "READ");
+
+      h2_ICEven_raw[-1] = (TH2F*)( inFileEEMEven->Get("IC") );
+      h2_ICEven_raw[1]  = (TH2F*)( inFileEEPEven->Get("IC") );
+      h2_ICOdd_raw[-1 ] = (TH2F*)( inFileEEMOdd ->Get("IC") );
+      h2_ICOdd_raw[1]   = (TH2F*)( inFileEEPOdd ->Get("IC") );
+
+      h2_ICEven_raw[-1] -> SetDirectory(0);
+      h2_ICEven_raw[1]  -> SetDirectory(0);
+      h2_ICOdd_raw[-1 ] -> SetDirectory(0); 
+      h2_ICOdd_raw[1]   -> SetDirectory(0);
       
       h2_IC_raw_phiNorm_even[-1] = (TH2F*)( h2_ICEven_raw[-1]->Clone("h2_IC_raw_phiNorm_even_EEM") );
       h2_IC_raw_phiNorm_even[1]  = (TH2F*)( h2_ICEven_raw[1] ->Clone("h2_IC_raw_phiNorm_even_EEP") );
@@ -270,6 +318,11 @@ int main(int argc, char **argv)
       h2_IC_raw_phiNorm_odd[1]  -> Reset("ICEMS");
       h2_IC_raw_phiNorm_odd[-1] -> ResetStats();
       h2_IC_raw_phiNorm_odd[1]  -> ResetStats();
+
+      inFileEEMEven -> Close();
+      inFileEEMOdd  -> Close();
+      inFileEEPEven -> Close();
+      inFileEEPOdd  -> Close();
     }
   }
   cout<<"OK"<<endl;    
