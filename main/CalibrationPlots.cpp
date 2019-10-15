@@ -210,6 +210,7 @@ int main(int argc, char **argv)
     TFile* inFile = new TFile(inFileName.c_str(), "READ");
     h2_IC_raw[0] = (TH2F*)( inFile->Get("IC") );
     h2_IC_raw[0] ->SetDirectory(0);
+    inFile->Close();
     h2_IC_raw_phiNorm[0] = (TH2F*)( h2_IC_raw[0]->Clone("h2_IC_raw_phiNorm_EB") );
     h2_IC_raw_phiNorm[0] -> Reset("ICEMS");
     h2_IC_raw_phiNorm[0] -> ResetStats();
@@ -219,8 +220,7 @@ int main(int argc, char **argv)
     h2_IC_crackCorr_phiNorm[0] = (TH2F*)( h2_IC_raw[0]->Clone("h2_IC_crackCorr_phiNorm_EB") );
     h2_IC_crackCorr_phiNorm[0] -> Reset("ICEMS");
     h2_IC_crackCorr_phiNorm[0] -> ResetStats();
-    inFile->Close();
-
+    
     if( evalStat )
     {
       TFile* inFileEven = new TFile(inFileNameEven.c_str(), "READ");
@@ -230,6 +230,8 @@ int main(int argc, char **argv)
       h2_ICOdd_raw[0]  = (TH2F*)( inFileOdd ->Get("IC") );
       h2_ICEven_raw[0] ->SetDirectory(0);
       h2_ICOdd_raw[0] ->SetDirectory(0);
+      inFileEven->Close();
+      inFileOdd->Close();
 
       h2_IC_raw_phiNorm_even[0] = (TH2F*)( h2_ICEven_raw[0]->Clone("h2_IC_raw_phiNorm_even_EB") );
       h2_IC_raw_phiNorm_even[0] -> Reset("ICEMS");
@@ -247,8 +249,6 @@ int main(int argc, char **argv)
       h2_IC_crackCorr_phiNorm_odd[0] -> Reset("ICEMS");
       h2_IC_crackCorr_phiNorm_odd[0] -> ResetStats();
 
-      inFileEven->Close();
-      inFileOdd->Close();
 
     }
 
@@ -263,6 +263,8 @@ int main(int argc, char **argv)
     h2_IC_raw[1]  = (TH2F*)( inFileEEP->Get("IC") );
     h2_IC_raw[-1]->SetDirectory(0);
     h2_IC_raw[1]->SetDirectory(0);
+    inFileEEM->Close();
+    inFileEEP->Close();
 
     h2_IC_raw_phiNorm[-1] = (TH2F*)( h2_IC_raw[-1]->Clone("h2_IC_raw_phiNorm_EEM") );
     h2_IC_raw_phiNorm[1]  = (TH2F*)( h2_IC_raw[1] ->Clone("h2_IC_raw_phiNorm_EEP") );
@@ -285,8 +287,6 @@ int main(int argc, char **argv)
     h2_IC_corr[-1] -> ResetStats();
     h2_IC_corr[1]  -> ResetStats();
 
-    inFileEEM->Close();
-    inFileEEP->Close();
 
     if( evalStat )
     {
@@ -304,6 +304,10 @@ int main(int argc, char **argv)
       h2_ICEven_raw[1]  -> SetDirectory(0);
       h2_ICOdd_raw[-1 ] -> SetDirectory(0); 
       h2_ICOdd_raw[1]   -> SetDirectory(0);
+      inFileEEMEven -> Close();
+      inFileEEMOdd  -> Close();
+      inFileEEPEven -> Close();
+      inFileEEPOdd  -> Close();
       
       h2_IC_raw_phiNorm_even[-1] = (TH2F*)( h2_ICEven_raw[-1]->Clone("h2_IC_raw_phiNorm_even_EEM") );
       h2_IC_raw_phiNorm_even[1]  = (TH2F*)( h2_ICEven_raw[1] ->Clone("h2_IC_raw_phiNorm_even_EEP") );
@@ -319,10 +323,6 @@ int main(int argc, char **argv)
       h2_IC_raw_phiNorm_odd[-1] -> ResetStats();
       h2_IC_raw_phiNorm_odd[1]  -> ResetStats();
 
-      inFileEEMEven -> Close();
-      inFileEEMOdd  -> Close();
-      inFileEEPEven -> Close();
-      inFileEEPOdd  -> Close();
     }
   }
   cout<<"OK"<<endl;    
