@@ -330,24 +330,24 @@ int main(int argc, char **argv)
   TGraphErrors* avgIC_vs_iEta=0;
   if( isEB == true )
   {
-    avgIC_vs_iEta = NormalizeIC_EB(h2_IC_raw[0], h2_IC_raw_phiNorm[0], TT_centre[0]);
+    avgIC_vs_iEta = NormalizeIC_EB(h2_IC_raw[0], h2_IC_raw_phiNorm[0], TT_centre[0], true,0.92,1.08);
     outFile -> cd();
     avgIC_vs_iEta ->Write("avgIC_vs_iEta");
     if( evalStat )
     {
-      NormalizeIC_EB(h2_ICEven_raw[0], h2_IC_raw_phiNorm_even[0], TT_centre[0]);
-      NormalizeIC_EB(h2_ICOdd_raw[0], h2_IC_raw_phiNorm_odd[0], TT_centre[0]);
+      NormalizeIC_EB(h2_ICEven_raw[0], h2_IC_raw_phiNorm_even[0], TT_centre[0], true,0.92,1.08);
+      NormalizeIC_EB(h2_ICOdd_raw[0], h2_IC_raw_phiNorm_odd[0], TT_centre[0], true,0.92,1.08);
     }
   }
   else
   {
-    NormalizeIC_EE(h2_IC_raw[-1], h2_IC_raw[1], h2_IC_raw_phiNorm[-1], h2_IC_raw_phiNorm[1], TT_centre[-1], TT_centre[1], eRings);
+    NormalizeIC_EE(h2_IC_raw[-1], h2_IC_raw[1], h2_IC_raw_phiNorm[-1], h2_IC_raw_phiNorm[1], TT_centre[-1], TT_centre[1], eRings, true,0.92,1.08);
     //    DrawCorr_EE(h2_IC_raw[-1],h2_IC_raw[1],h2_corrP[-1],h2_corrP[1],TT_centre[-1],TT_centre[1],corrMomentum,eRings,true,1);
     //    DrawICCorr_EE(h2_IC_raw[-1],h2_IC_raw[1],h2_IC_corr[-1],h2_IC_corr[1],TT_centre[-1],TT_centre[1],corrMomentum,eRings,true);
     if( evalStat )
     {
-      NormalizeIC_EE(h2_ICEven_raw[-1], h2_ICEven_raw[1], h2_IC_raw_phiNorm_even[-1], h2_IC_raw_phiNorm_even[1], TT_centre[-1], TT_centre[1], eRings);
-      NormalizeIC_EE(h2_ICOdd_raw[-1], h2_ICOdd_raw[1], h2_IC_raw_phiNorm_odd[-1], h2_IC_raw_phiNorm_odd[1], TT_centre[-1], TT_centre[1], eRings);
+      NormalizeIC_EE(h2_ICEven_raw[-1], h2_ICEven_raw[1], h2_IC_raw_phiNorm_even[-1], h2_IC_raw_phiNorm_even[1], TT_centre[-1], TT_centre[1], eRings, true,0.92,1.08);
+      NormalizeIC_EE(h2_ICOdd_raw[-1], h2_ICOdd_raw[1], h2_IC_raw_phiNorm_odd[-1], h2_IC_raw_phiNorm_odd[1], TT_centre[-1], TT_centre[1], eRings, true,0.92,1.08);
     }
   }
 
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
   TGraphErrors* g_avgIC_vsPhiFold_EBP = new TGraphErrors();
   if( isEB == true )
   {
-    PhiFoldProfile_EB(g_avgIC_vsPhiFold_EBM, g_avgIC_vsPhiFold_EBP, phiRegionWidth, h2_IC_raw_phiNorm[0]);
+    PhiFoldProfile_EB(g_avgIC_vsPhiFold_EBM, g_avgIC_vsPhiFold_EBP, phiRegionWidth, h2_IC_raw_phiNorm[0], 0.92, 1.08);
     g_avgIC_vsPhiFold_EBM -> Write("g_avgIC_vsPhiFold_EBM");
     g_avgIC_vsPhiFold_EBP -> Write("g_avgIC_vsPhiFold_EBP");
   }
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 	}
       }
 
-    avgIC_vs_iEta_crackCorr = NormalizeIC_EB(h2_IC_crackCorr[0], h2_IC_crackCorr_phiNorm[0], TT_centre[0], false);
+    avgIC_vs_iEta_crackCorr = NormalizeIC_EB(h2_IC_crackCorr[0], h2_IC_crackCorr_phiNorm[0], TT_centre[0], false, 0.92,1.08);
     outFile -> mkdir("crackCorr");
     outFile -> cd("crackCorr");
     avgIC_vs_iEta_crackCorr->Write("avgIC_vs_iEta_crackCorr");

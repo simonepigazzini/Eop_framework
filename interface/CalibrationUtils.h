@@ -24,7 +24,7 @@ void InitializeDeadTT_EB_onlyW(std::vector<std::pair<int, int> >& TT_centre);
 
 
 /// Normalize IC vs ring EB
-TGraphErrors* NormalizeIC_EB(TH2F* h_scale_EB, TH2F* hcmap, const std::vector< std::pair<int, int> > & TT_centre, bool skip = true);
+TGraphErrors* NormalizeIC_EB(TH2F* h_scale_EB, TH2F* hcmap, const std::vector< std::pair<int, int> > & TT_centre, bool skip = true, float ICmin=0., float ICmax=2.);
 
 /// Normalize IC vs LMR EB
 void NormalizeIC_LMR_EB(TH2F* h_scale_EB, TH2F* hcmap, const std::vector< std::pair<int, int> > & TT_centre, bool skip = true);
@@ -42,7 +42,7 @@ void PhiProfile(TH1F* h_phiAvgICSpread, TGraphErrors* g_avgIC_vsPhi, const int& 
                 TH2F* hcmap, TEndcapRings* eRings = NULL);
 
 void PhiFoldProfile_EB(TGraphErrors* g_avgIC_vsPhiFold_EBM, TGraphErrors* g_avgIC_vsPhiFold_EBP, const int& phiRegionWidth,
-                       TH2F* hcmap);
+                       TH2F* hcmap, float ICmin=0., float ICmax=2.);
 
 /// Residual Spread
 void ResidualSpread (TGraphErrors *statprecision, TGraphErrors *Spread, TGraphErrors *Residual);
@@ -66,7 +66,7 @@ void InitializeDeadTTEEM(std::vector<std::pair<int, int> >& TT_centre);
 void InitializeDeadTTEEM2012(std::vector<std::pair<int, int> >& TT_centre);
 
 /// Normalize in function of ring
-void NormalizeIC_EE(TH2F* h_scale_EEM, TH2F* h_scale_EEP, TH2F* hcmap_EEM, TH2F* hcmap_EEP, const std::vector< std::pair<int, int> > & TT_centre_EEM, const  std::vector< std::pair<int, int> > & TT_centre_EEP, TEndcapRings *eRings, bool skip = true);
+void NormalizeIC_EE(TH2F* h_scale_EEM, TH2F* h_scale_EEP, TH2F* hcmap_EEM, TH2F* hcmap_EEP, const std::vector< std::pair<int, int> > & TT_centre_EEM, const  std::vector< std::pair<int, int> > & TT_centre_EEP, TEndcapRings *eRings, bool skip = true, float ICmin=0., float ICmax=2.);
 
 /// Book spread  Histos
 void BookSpreadHistos_EE(std::map<int, TH1F*>& h_spread, std::map<int, std::vector<TH1F*> >& h_spread_vsEtaFold, std::map<int, TGraphErrors*>& g_spread_vsEtaFold,

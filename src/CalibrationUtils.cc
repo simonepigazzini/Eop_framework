@@ -290,7 +290,10 @@ bool CheckxtalIC_EB(TH2F* h_scale_EB, int iPhi, int iEta)
 bool CheckxtalTT_EB(int iPhi, int iEta, const std::vector<std::pair<int, int> >& TT_centre)
 {
 	for(unsigned int k = 0; k < TT_centre.size(); ++k)
-		if( (fabs(iPhi - TT_centre.at(k).second) < 5) && (fabs(iEta - 86 - TT_centre.at(k).first) < 5) ) return false;
+	  //safety margin of 2 crystals
+	  //if( (fabs(iPhi - TT_centre.at(k).second) < 5) && (fabs(iEta - 86 - TT_centre.at(k).first) < 5) ) return false;
+	  //safety margin of 1 crystal
+	  if( (fabs(iPhi - TT_centre.at(k).second) < 4) && (fabs(iEta - 86 - TT_centre.at(k).first) < 4) ) return false;
 
 	return true;
 }
@@ -344,41 +347,47 @@ bool CheckxtalTT_EE(int ix, int iy, int ir, const std::vector<std::pair<int, int
 // normalize the IC of each eta ring to the average IC of that ring
 ///////////////////////////////////////////////////////////////////
 
-TGraphErrors* NormalizeIC_EB(TH2F* h_scale_EB, TH2F* hcmap_EB, const std::vector< std::pair<int, int> > & TT_centre, bool skip)
+TGraphErrors* NormalizeIC_EB(TH2F* h_scale_EB, TH2F* hcmap_EB, const std::vector< std::pair<int, int> > & TT_centre, bool skip, float ICmin, float ICmax)
 {
-        TGraphErrors* avgIC_vs_iEta = new TGraphErrors();
-	// mean over phi corrected skipping dead channel
-	for(int iEta = 1; iEta <= h_scale_EB->GetNbinsY(); ++iEta) {
-		float sumIC = 0.;
-		int numIC = 0;
-
-		for(int iPhi = 1; iPhi <= h_scale_EB->GetNbinsX() ; ++iPhi) {
-			bool isGood = CheckxtalIC_EB(h_scale_EB, iPhi, iEta);
-			bool isGoodTT = CheckxtalTT_EB(iPhi, iEta, TT_centre);
-
-			if( isGood && isGoodTT ) {
-				sumIC += h_scale_EB -> GetBinContent(iPhi, iEta);
-				++numIC;
-			}
-		}
-                avgIC_vs_iEta->SetPoint(iEta-1,iEta-86,sumIC / numIC);
-
-		// normalize IC skipping bad channels and bad TTs
-		for(int iPhi = 1; iPhi <= h_scale_EB->GetNbinsX(); ++iPhi) {
-			if( numIC == 0 || sumIC == 0 ) continue;
-
-			if( !skip ) {
-				hcmap_EB -> SetBinContent(iPhi, iEta, h_scale_EB->GetBinContent(iPhi, iEta) / (sumIC / numIC));
-				continue;
-			} else {
-				bool isGood = CheckxtalIC_EB(h_scale_EB, iPhi, iEta);
-				bool isGoodTT = CheckxtalTT_EB(iPhi, iEta, TT_centre);
-				if( !isGood || !isGoodTT ) continue;
-				hcmap_EB -> SetBinContent(iPhi, iEta, h_scale_EB->GetBinContent(iPhi, iEta) / (sumIC / numIC));
-			}
-		}
-	}
-	return avgIC_vs_iEta;
+  TGraphErrors* avgIC_vs_iEta = new TGraphErrors();
+  // mean over phi corrected skipping dead channel
+  for(int iEta = 1; iEta <= h_scale_EB->GetNbinsY(); ++iEta) 
+  {
+    float sumIC = 0.;
+    int numIC = 0;
+    for(int iPhi = 1; iPhi <= h_scale_EB->GetNbinsX() ; ++iPhi) 
+    {
+      bool isGood = CheckxtalIC_EB(h_scale_EB, iPhi, iEta);
+      bool isGoodTT = CheckxtalTT_EB(iPhi, iEta, TT_centre);
+      float IC = h_scale_EB -> GetBinContent(iPhi, iEta);
+      if( isGood && isGoodTT && IC>ICmin && IC<ICmax) 
+      {
+	sumIC += IC;
+	++numIC;
+      }
+    }
+    avgIC_vs_iEta->SetPoint(iEta-1,iEta-86,sumIC / numIC);
+    
+    // normalize IC skipping bad channels and bad TTs
+    for(int iPhi = 1; iPhi <= h_scale_EB->GetNbinsX(); ++iPhi) 
+    {
+      if( numIC == 0 || sumIC == 0 ) 
+	continue;
+      if( !skip ) 
+      {
+	hcmap_EB -> SetBinContent(iPhi, iEta, h_scale_EB->GetBinContent(iPhi, iEta) / (sumIC / numIC));
+	continue;
+      } 
+      else 
+      {
+	bool isGood = CheckxtalIC_EB(h_scale_EB, iPhi, iEta);
+	bool isGoodTT = CheckxtalTT_EB(iPhi, iEta, TT_centre);
+	if( !isGood || !isGoodTT ) continue;
+	hcmap_EB -> SetBinContent(iPhi, iEta, h_scale_EB->GetBinContent(iPhi, iEta) / (sumIC / numIC));
+      }
+    }
+  }
+  return avgIC_vs_iEta;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -481,7 +490,7 @@ void NormalizeIC_EE(TH2F* h_scale_EEM, TH2F* h_scale_EEP,
                     TH2F* hcmap_EEM, TH2F* hcmap_EEP,
                     const std::vector< std::pair<int, int> >& TT_centre_EEM,
                     const std::vector< std::pair<int, int> >& TT_centre_EEP,
-                    TEndcapRings* eRings, bool skip)
+                    TEndcapRings* eRings, bool skip, float ICmin, float ICmax)
 {
 	std::map<int, TH2F*> h_scale_EE;
 	std::map<int, TH2F*> hcmap_EE;
@@ -517,7 +526,8 @@ void NormalizeIC_EE(TH2F* h_scale_EEM, TH2F* h_scale_EEP,
 				if( k == 0 ) isGoodTT = CheckxtalTT_EE(ix, iy, ring, TT_centre_EEM);
 				else         isGoodTT = CheckxtalTT_EE(ix, iy, ring, TT_centre_EEP);
 
-				if( isGoodTT && isGood ) {
+				float IC = h_scale_EE[k]->GetBinContent(ix, iy);
+				if( isGoodTT && isGood && IC>ICmin && IC<ICmax) {
 					(sumIC[k]).at(ring) += h_scale_EE[k]->GetBinContent(ix, iy);
 					(numIC[k]).at(ring) += 1;
 				}
@@ -734,10 +744,10 @@ void PhiProfile(TH1F* h_phiAvgICSpread, TGraphErrors* g_avgIC_vsPhi, const int& 
 
 
 void PhiFoldProfile_EB(TGraphErrors* g_avgIC_vsPhiFold_EBM, TGraphErrors* g_avgIC_vsPhiFold_EBP, const int& phiRegionWidth,
-                       TH2F* hcmap)
+                       TH2F* hcmap, float ICmin, float ICmax)
 {
 	// define the number of phi regions
-  int nPhiRegions = 20 / phiRegionWidth;
+	int nPhiRegions = 20 / phiRegionWidth;
 	if( 20 % phiRegionWidth > 0 ) nPhiRegions += 1;
 
 	std::vector<TH1F*> h_IC_vsPhiFold_EBM(nPhiRegions);
@@ -745,16 +755,16 @@ void PhiFoldProfile_EB(TGraphErrors* g_avgIC_vsPhiFold_EBM, TGraphErrors* g_avgI
 	for(int i = 0; i < nPhiRegions; ++i) {
 		char histoName[50];
 		sprintf(histoName, "h_IC_vsPhiFold_EBM_%03d", i);
-		h_IC_vsPhiFold_EBM.at(i) = new TH1F(histoName, "", 1000, 0., 2.);
+		h_IC_vsPhiFold_EBM.at(i) = new TH1F(histoName, "", 1000, ICmin, ICmax);
 		sprintf(histoName, "h_IC_vsPhiFold_EBP_%03d", i);
-		h_IC_vsPhiFold_EBP.at(i) = new TH1F(histoName, "", 1000, 0., 2.);
+		h_IC_vsPhiFold_EBP.at(i) = new TH1F(histoName, "", 1000, ICmin, ICmax);
 	}
 
 
 	for(int ibin = 1; ibin <= hcmap->GetNbinsX(); ++ibin)
 		for(int jbin = 1; jbin <= hcmap->GetNbinsY(); ++jbin) {
 			float IC = hcmap->GetBinContent(ibin, jbin);
-			if( IC <= 0. || IC >= 2. ) continue;
+			if( IC <= ICmin || IC >= ICmax ) continue;
 
 			float phiRegionMin = hcmap->GetXaxis()->GetBinLowEdge(ibin);
 			int phiRegion = int( (fabs(phiRegionMin) - 1.) / phiRegionWidth ) % 20;
@@ -975,14 +985,14 @@ void PhiProfileEE(TGraphErrors *phiProjection, TGraphErrors **MomentumScale, TH2
 
 void InitializeDeadTT_EB(std::vector<std::pair<int, int> >& TT_centre)
 {
-	TT_centre.push_back(std::pair<int, int> (58, 49));
-	TT_centre.push_back(std::pair<int, int> (53, 109));
-	TT_centre.push_back(std::pair<int, int> (8, 114));
-	TT_centre.push_back(std::pair<int, int> (83, 169));
-	TT_centre.push_back(std::pair<int, int> (53, 174));
-	TT_centre.push_back(std::pair<int, int> (63, 194));
-	TT_centre.push_back(std::pair<int, int> (83, 224));
-	TT_centre.push_back(std::pair<int, int> (73, 344));
+	TT_centre.push_back(std::pair<int, int> (58, 48));
+	TT_centre.push_back(std::pair<int, int> (53, 108));
+	TT_centre.push_back(std::pair<int, int> (8, 113));
+	TT_centre.push_back(std::pair<int, int> (83, 168));
+	TT_centre.push_back(std::pair<int, int> (53, 173));
+	TT_centre.push_back(std::pair<int, int> (63, 193));
+	TT_centre.push_back(std::pair<int, int> (83, 223));
+	TT_centre.push_back(std::pair<int, int> (73, 343));
 	TT_centre.push_back(std::pair<int, int> (83, 358));
 	TT_centre.push_back(std::pair<int, int> (-13, 18));
 	TT_centre.push_back(std::pair<int, int> (-18, 23));
@@ -998,18 +1008,34 @@ void InitializeDeadTT_EB(std::vector<std::pair<int, int> >& TT_centre)
 	TT_centre.push_back(std::pair<int, int> (-68, 303));
 	TT_centre.push_back(std::pair<int, int> (-43, 328));
 	TT_centre.push_back(std::pair<int, int> (-43, 243));
+	///////////////////////////////////////////////////////////
+	//remove very critical harness -45<=ieta<=-26 && 301<=iphi<=310
+	/*
+	TT_centre.push_back(std::pair<int, int> (-41, 304));
+	TT_centre.push_back(std::pair<int, int> (-40, 304));
+	TT_centre.push_back(std::pair<int, int> (-41, 305));
+	TT_centre.push_back(std::pair<int, int> (-40, 305));
+	TT_centre.push_back(std::pair<int, int> (-31, 304));
+	TT_centre.push_back(std::pair<int, int> (-30, 304));
+	TT_centre.push_back(std::pair<int, int> (-31, 305));
+	TT_centre.push_back(std::pair<int, int> (-30, 305));
+	std::cout<<"I AM HERE"<<std::endl;
+	*/
+	///////////////////////////////////////////////////////////
+
+
 }
 
 void InitializeDeadTT_EB_onlyW(std::vector<std::pair<int, int> >& TT_centre)
 {
-	TT_centre.push_back(std::pair<int, int> (58, 49));
-	TT_centre.push_back(std::pair<int, int> (53, 109));
-	TT_centre.push_back(std::pair<int, int> (8, 114));
-	TT_centre.push_back(std::pair<int, int> (83, 169));
-	TT_centre.push_back(std::pair<int, int> (53, 174));
-	TT_centre.push_back(std::pair<int, int> (63, 194));
-	TT_centre.push_back(std::pair<int, int> (83, 224));
-	TT_centre.push_back(std::pair<int, int> (73, 344));
+	TT_centre.push_back(std::pair<int, int> (58, 48));
+	TT_centre.push_back(std::pair<int, int> (53, 108));
+	TT_centre.push_back(std::pair<int, int> (8, 113));
+	TT_centre.push_back(std::pair<int, int> (83, 168));
+	TT_centre.push_back(std::pair<int, int> (53, 173));
+	TT_centre.push_back(std::pair<int, int> (63, 193));
+	TT_centre.push_back(std::pair<int, int> (83, 223));
+	TT_centre.push_back(std::pair<int, int> (73, 343));
 	TT_centre.push_back(std::pair<int, int> (83, 358));
 	TT_centre.push_back(std::pair<int, int> (-13, 18));
 	TT_centre.push_back(std::pair<int, int> (-18, 23));
@@ -1044,6 +1070,21 @@ void InitializeDeadTT_EB_onlyW(std::vector<std::pair<int, int> >& TT_centre)
         TT_centre.push_back(std::pair<int, int> (18, 343));
         //TT_centre.push_back(std::pair<int, int> (73, 343));
         TT_centre.push_back(std::pair<int, int> (83, 358));
+
+	///////////////////////////////////////////////////////////
+	//remove very critical harness -45<=ieta<=-26 && 301<=iphi<=310
+	/*
+	TT_centre.push_back(std::pair<int, int> (-41, 304));
+	TT_centre.push_back(std::pair<int, int> (-40, 304));
+	TT_centre.push_back(std::pair<int, int> (-41, 305));
+	TT_centre.push_back(std::pair<int, int> (-40, 305));
+	TT_centre.push_back(std::pair<int, int> (-31, 304));
+	TT_centre.push_back(std::pair<int, int> (-30, 304));
+	TT_centre.push_back(std::pair<int, int> (-31, 305));
+	TT_centre.push_back(std::pair<int, int> (-30, 305));
+	std::cout<<"I AM HERE2"<<std::endl;
+	*/
+	///////////////////////////////////////////////////////////
 }
 
 
