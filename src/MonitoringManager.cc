@@ -3,21 +3,51 @@
 using namespace std;
 
 MonitoringManager::MonitoringManager(CfgManager conf):
-  ECALELFInterface(conf),
+  calibrator(conf),
   conf_(conf),
   h_template_(0),
+  variable_(0),
   last_accessed_bin_(timebins.end())
 {
   label_ = conf.GetOpt<string> ("Input.label");  
   variablename_ = conf.GetOpt<string> ("LaserMonitoring.variable");
+  SetScaleVariable(variablename_);
 }
 
 MonitoringManager::~MonitoringManager()
 {
   if(h_template_)
     delete h_template_;
+  if(variable_)
+    delete variable_;
 }
- 
+
+void MonitoringManager::SetScaleVariable(const string &variablename)
+{
+  if(variablename=="ICenergy_over_p")
+  {
+    cout<<">> SetScaleVariable: special keyword detected"<<endl;
+    variabletype_=kICenergy_over_p;
+  }
+  else
+  {
+    variabletype_=kregular;
+    variable_ = new TTreeFormula("variable", variablename_.c_str(), chain_);
+  }
+}
+
+float MonitoringManager::GetScaleVariableValue(const int &iEle)
+{
+  if(variabletype_==kICenergy_over_p)
+    if(GetP(iEle)!=0)
+      return GetICEnergy(iEle)/GetP(iEle);
+    else
+      return -999;
+  else
+    return variable_ -> EvalInstance(iEle);
+}
+
+
 TH1F* MonitoringManager::BuildTemplate()
 {
   int Nbin   = conf_.GetOpt<int>   ("LaserMonitoring.BuildTemplate.Nbin");
@@ -223,8 +253,8 @@ void  MonitoringManager::FillTimeBins()
     cout<<">> Cannot book the histos... Maybe you have already filled them " << endl;
 									  return;
   }
-      
-  TTreeFormula* variable = new TTreeFormula("variable", variablename_.c_str(), chain_);
+
+  
   long Nentries = this->GetEntries();
   cout<<Nentries<<" total entries\n"<<endl;
   for(long ientry=0; ientry<Nentries; ++ientry)
@@ -241,12 +271,11 @@ void  MonitoringManager::FillTimeBins()
 	
 	auto bin_iterator = FindBin(this->GetRunNumber(),this->GetLS(),this->GetTime());
 	if(bin_iterator!=timebins.end())
-	  bin_iterator->FillHisto( variable->EvalInstance(iEle) );
+	  bin_iterator->FillHisto( GetScaleVariableValue(iEle) );
       }
     }
   }
 
-  delete variable;
   cout<<">> Histos filled"<<endl;
 
 }

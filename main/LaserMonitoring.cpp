@@ -15,6 +15,11 @@
 
 using namespace std;
 
+void PrintUsage()
+{
+  cout<<"Usage: LaserMonitoring.exe --cfg <cfg_filename> [--buildTemplate] [--runDivide] [--scaleMonitor] [--saveHistos]"<<endl;
+}
+  
 int main(int argc, char* argv[])
 {
   string cfgfilename   = "";
@@ -39,9 +44,14 @@ int main(int argc, char* argv[])
   }
       
   // parse the config file
+  if(cfgfilename=="")
+  {
+    PrintUsage();
+    return -1;
+  }
   CfgManager config;
   config.ParseConfigFile(cfgfilename.c_str());
-
+  
   // define the monitoring manager object
   MonitoringManager monitor(config);
 

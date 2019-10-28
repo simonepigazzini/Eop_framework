@@ -19,9 +19,9 @@
 #include "TH1F.h"
 #include "TFile.h"
 #include "TObject.h"
-#include "ECALELFInterface.h"
+#include "calibrator.h"
 
-class MonitoringManager: public ECALELFInterface
+class MonitoringManager: public calibrator
 {
 
  public:
@@ -44,8 +44,12 @@ class MonitoringManager: public ECALELFInterface
   //void  SaveScales(TFile* outfile){};
   //void  saveHistos(TFile* outfile){};
   void  PrintScales();
+  float GetScaleVariableValue(const int &iEle);
   
  protected:
+  enum kvariabletype {kregular, kICenergy_over_p};
+  TTreeFormula* variable_;
+  int variabletype_;
   std::vector<TimeBin::TimeBin>::iterator last_accessed_bin_;
   std::vector<TimeBin::TimeBin> timebins;
   std::string variablename_;
@@ -53,6 +57,7 @@ class MonitoringManager: public ECALELFInterface
   TH1F* h_template_;
   CfgManager conf_;
   bool BookHistos();
+  void SetScaleVariable(const string &variablename);
 };
 
 #endif

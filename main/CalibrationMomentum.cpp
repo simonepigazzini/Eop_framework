@@ -1,6 +1,5 @@
 #include "histoFunc.h"
-#include "calibratorEB.h"
-#include "calibratorEE.h"
+#include "calibrator.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
 
@@ -88,14 +87,7 @@ int main(int argc, char** argv)
   TH2D* h2_Mee_PElectron_EPositron_vs_phiElectron = new TH2D("Mee_vs_phiElectron", "Mee_vs_phiElectron", nPhiBins, -TMath::Pi(), TMath::Pi(), 2200, 0.2, 1.6);
 
   //**************************** loop on events
-  calibrator* data;
-
-  if(doEB)
-    data = new calibratorEB(config);
-  else
-    data = new calibratorEE(config);
-
-  //  calibrator data(config);
+  calibrator* data = new calibrator(config);
   
   long int Nentries = data->GetEntries();
   std::cout << "Loop in data events " << endl;

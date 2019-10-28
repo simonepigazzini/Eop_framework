@@ -8,7 +8,8 @@ calibrator::calibrator(CfgManager conf):
   ICmanager(conf),
   electron_momentum_correction_(0),
   positron_momentum_correction_(0),
-  weight_(0)
+  weight_(0),
+  EScorrection_(false)
 {
 
   //-------------------------------------
@@ -35,6 +36,12 @@ calibrator::calibrator(CfgManager conf):
   useRegression_ = true;
   if(conf.OptExist("Input.useRegression"))
     useRegression_ = conf.GetOpt<bool> ("Input.useRegression");
+
+  if(conf.OptExist("Input.EScorrection"))
+    EScorrection_ = conf.GetOpt<bool>("Input.EScorrection");
+  else
+    cout<<"[WARNING]: option Input.EScorrection NOT found --> set "<<EScorrection_ <<" by default"<<endl;
+
 
 }
 
@@ -118,4 +125,161 @@ void calibrator::PrintSettings()
   else
     cout<<">>> Eop weight NOT LOADED"<<endl;
   cout<<"----------------------------------------------------------------------------------"<<endl;
+}
+
+Float_t calibrator::GetPcorrected(const Int_t &i)
+{
+  if(isEB(i))
+    return GetPcorrectedEB(i);
+  else
+    if(isEE(i))
+      return GetPcorrectedEE(i);
+    else
+      return -999;
+}
+
+Float_t calibrator::GetICEnergy(const Int_t &i)
+{
+  if(isEB(i))
+    return GetICEnergyEB(i);
+  else
+    if(isEE(i))
+      return GetICEnergyEE(i);
+    else
+      return -999;
+  
+}
+
+Float_t calibrator::GetRegression(const Int_t &i)
+{
+  if(isEB(i))
+    return GetRegressionEB(i);
+  else
+    if(isEE(i))
+      return GetRegressionEE(i);
+    else
+      return -999;
+
+}
+
+
+//sometimes ES energy > tracker momentum, in those cases return 0
+Float_t calibrator::GetPcorrectedEE(const Int_t &i)
+{
+#ifdef DEBUG
+  if(!electron_momentum_correction_)
+    cerr<<"[ERROR]: electron momentum correction not loaded"<<endl;
+  if(!positron_momentum_correction_)
+    cerr<<"[ERROR]: positron momentum correction not loaded"<<endl;
+#endif
+  if(chargeEle_[i]==-1)
+  {
+    float pCORR = pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]) - EScorrection_*esEnergySCEle_[i];
+    if(pCORR>0)
+      return pCORR;
+    else
+      return 0;
+  }
+  if(chargeEle_[i]==+1)
+  {
+    float pCORR= pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]) - EScorrection_*esEnergySCEle_[i];
+    if(pCORR>0)
+      return pCORR;
+    else
+      return 0;
+  }
+  return -999.;
+}
+
+Float_t calibrator::GetICEnergyEE(const Int_t &i)
+{
+  float kRegression=1;
+  if(useRegression_)
+    kRegression=energySCEle_[i]/(rawEnergySCEle_[i]+EScorrection_*esEnergySCEle_[i]);
+  float E=0;
+  float IC = 1.;
+  int ix,iy;
+
+  for(unsigned int iRecHit = 0; iRecHit < ERecHit_[i]->size(); iRecHit++) 
+  {
+    if(recoFlagRecHit_[i]->at(iRecHit) >= 4)
+	continue;
+    ix = XRecHit_[i]->at(iRecHit);
+    iy = YRecHit_[i]->at(iRecHit);
+#ifdef DEBUG
+    if(ix>=Neta_) cout<<"ieta>=Neta"<<endl;
+    if(iy>=Nphi_) cout<<"iphi>=Nphi"<<endl;
+    if(ix<0)     cout<<"ieta<0"<<endl;
+    if(iy<0)     cout<<"iphi<0"<<endl;
+#endif
+    if(ZRecHit_[i]->at(iRecHit)==0)
+      IC=1.;
+    else
+      //the function fromIetaIphito1Dindex is tuned for EB --> ix and iy must be inverted
+      IC = (xtal_[fromIetaIphito1Dindex(iy,ix,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
+    E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
+    //cout<<"GetICEnergy\tiRECHIT="<<iRecHit<<"\tix="<<XRecHit_[i]->at(iRecHit)<<"\tiy="<<YRecHit_[i]->at(iRecHit)<<"\tiz="<<ZRecHit_[i]->at(iRecHit)<<"\tIC="<<IC<<endl;
+  }
+      
+  return E;
+}
+
+Float_t calibrator::GetRegressionEE(const Int_t &i) 
+{
+  return energySCEle_[i]/(rawEnergySCEle_[i]+EScorrection_*esEnergySCEle_[i]);
+}
+
+
+
+Float_t  calibrator::GetPcorrectedEB(const Int_t &i)
+{
+#ifdef DEBUG
+  if(!electron_momentum_correction_)
+    cerr<<"[ERROR]: electron momentum correction not loaded"<<endl;
+  if(!positron_momentum_correction_)
+    cerr<<"[ERROR]: positron momentum correction not loaded"<<endl;
+#endif
+  if(chargeEle_[i]==-1)
+    return pAtVtxGsfEle_[i]/electron_momentum_correction_->Eval(phiEle_[i]);
+  if(chargeEle_[i]==+1)
+    return pAtVtxGsfEle_[i]/positron_momentum_correction_->Eval(phiEle_[i]);
+  return -999.;
+}
+
+Float_t calibrator::GetICEnergyEB(const Int_t &i)
+{
+  if(i>1)
+    cerr<<"[ERROR]:energy array out of range"<<endl;
+  float kRegression=1;
+  if(useRegression_)
+    kRegression=energySCEle_[i]/rawEnergySCEle_[i];
+  float E=0;
+  float IC = 1.;
+  int ieta,iphi;
+
+  for(unsigned int iRecHit = 0; iRecHit < ERecHit_[i]->size(); iRecHit++) 
+  {
+    if(recoFlagRecHit_[i]->at(iRecHit) >= 4)
+	continue;
+    ieta = XRecHit_[i]->at(iRecHit);
+    iphi = YRecHit_[i]->at(iRecHit);
+#ifdef DEBUG
+    if(ieta>=Neta_) cout<<"ieta>=Neta"<<endl;
+    if(iphi>=Nphi_) cout<<"iphi>=Nphi"<<endl;
+    if(ieta<0)      cout<<"ieta<0"<<endl;
+    if(iphi<0)      cout<<"iphi<0"<<endl;
+#endif
+    if(ZRecHit_[i]->at(iRecHit)!=0)
+      IC=1.;
+    else
+      IC = (xtal_[fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
+    E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
+  }
+      
+  return E;
+}
+
+Float_t  calibrator::GetRegressionEB(const Int_t &i)
+{
+  return energySCEle_[i]/rawEnergySCEle_[i];
 }
