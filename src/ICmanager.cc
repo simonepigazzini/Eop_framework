@@ -74,11 +74,50 @@ void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
     delete[] xtal_;
   string objkey   = ICcfg[0];
   string filename = ICcfg[1];
-  cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
-  TFile* inICfile = new TFile(filename.c_str(),"READ");
-  TH2D* ICmap = (TH2D*) inICfile->Get(objkey.c_str());
-  this->LoadIC(ICmap);
-  inICfile->Close();
+  if(objkey!="txtEB")
+  {
+    cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
+    TFile* inICfile = new TFile(filename.c_str(),"READ");
+    TH2D* ICmap = (TH2D*) inICfile->Get(objkey.c_str());
+    this->LoadIC(ICmap);
+    inICfile->Close();
+  }
+  else
+  {
+    cout<<"> Loading IC from txt file "<<filename<<endl;    
+    ifstream intxtfile(filename.c_str());
+    this->LoadIC(intxtfile);
+    intxtfile.close();
+  }
+}
+
+void ICmanager::LoadIC(ifstream &infile)
+{
+  /////////////////////////////////////////////////////////////////////////
+  //temporary only for the barrel
+  Neta_=171;
+  ietamin_=-85;
+  ietamax_=85;
+  Nphi_=360;
+  iphimin_=1;
+  iphimax_=360;
+  /////////////////////////////////////////////////////////////////////////
+
+  xtal_ = new crystal[Neta_*Nphi_];
+  int iPhi, iEta, iz;
+  double ic, eic;
+  while (!infile.eof()) 
+  {
+    infile >> iEta >> iPhi >> iz >> ic >> eic ;
+    //cout << iEta <<"\t"<< iPhi <<"\t"<< iz <<"\t"<< ic << eic <<endl ;
+    if(iz==0)
+    {
+      int index = fromIetaIphito1Dindex(iEta,iPhi,Neta_,Nphi_,ietamin_,iphimin_);
+      //cout<<"setting ic of "<<index<<" to "<<ic<<endl;
+      xtal_[index].IC = ic;
+      xtal_[index].status = 1;
+    }
+  }
 }
 
 void ICmanager::CreateIC()
