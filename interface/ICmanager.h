@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "CfgManager.h"
 #include "CfgManagerT.h"
@@ -40,6 +41,7 @@ class ICmanager
   TH2D*    GetHisto(const char* name="IC", const char* title="IC");
   void     LoadIC(TH2D* IC);
   void     LoadIC(const std::vector<std::string> &ICcfg);
+  void     LoadIC(std::ifstream &infile);
   void     InitIC(Int_t ICvalue);
   double&  operator()(const Int_t &ieta, const Int_t &iphi);
   TH2D*    GetPulledIC(TH2D* h2_ICpull);
