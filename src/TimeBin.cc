@@ -64,7 +64,8 @@ TimeBin::TimeBin& TimeBin::TimeBin::operator=(const TimeBin& other)
   timemin_      = other.timemin_;
   timemax_      = other.timemax_;
   Nev_          = other.Nev_;
-  variablelist_ = other.variablelist_;
+  for (auto variableindex : other.variablelist_)
+    variablelist_[variableindex.first] = variableindex.second;
   if(other.h_scale_)
   {
     h_scale_      = new TH1F(*(other.h_scale_));
