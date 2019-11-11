@@ -21,9 +21,10 @@ TimeBin::TimeBin::TimeBin(const TimeBin &bincopy):
   lsmax_        (bincopy.lsmax_),
   timemin_      (bincopy.timemin_),
   timemax_      (bincopy.timemax_),
-  Nev_          (bincopy.Nev_),
-  variablelist_ (bincopy.variablelist_)
+  Nev_          (bincopy.Nev_)
   {
+    for (auto variableindex : bincopy.variablelist_)
+      variablelist_[variableindex.first] = variableindex.second;
     if(bincopy.h_scale_)
     {
       h_scale_ = new TH1F(*(bincopy.h_scale_));
