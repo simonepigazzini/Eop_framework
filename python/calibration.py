@@ -203,7 +203,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
-            mergescript.write("hadd -f "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
+            mergescript.write("hadd -f -k "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+"_file_*_*.root\n")
             mergescript.write(str(options.exedir)+"/NormalizeBuildEopEta.exe --Eopweight TH2F EopEta "+str(options.outdir)+"/EopEta_loop_"+str(iLoop)+".root\n")
             mergescript.close()
             os.system("chmod 777 "+mergescriptName)
@@ -214,7 +214,7 @@ for iLoop in range(options.RestartFromLoop,options.Nloop):
             mergescript.write("cd /afs/cern.ch/work/f/fmonti/flashggNew/CMSSW_10_5_0/\n")
             mergescript.write('eval `scram runtime -sh`\n');
             mergescript.write("cd -\n");
-            mergescript.write("hadd -f "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
+            mergescript.write("hadd -f -k "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root "+str(options.outdir)+"/IC_loop_"+str(iLoop)+"_file_*_*.root\n")
             if iLoop==0:
                 mergescript.write(str(options.exedir)+"/UpdateIC.exe --newIC IC "+str(options.outdir)+"/IC_loop_"+str(iLoop)+".root\n")
             else:
