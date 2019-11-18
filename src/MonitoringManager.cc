@@ -6,7 +6,6 @@ MonitoringManager::MonitoringManager(CfgManager conf):
   calibrator(conf),
   conf_(conf),
   h_template_(0),
-  variable_(0),
   last_accessed_bin_(timebins.end())
 {
   label_ = conf.GetOpt<string> ("Input.label");  
@@ -18,8 +17,6 @@ MonitoringManager::~MonitoringManager()
 {
   if(h_template_)
     delete h_template_;
-  if(variable_)
-    delete variable_;
 }
 
 void MonitoringManager::SetScaleVariable(const string &variablename)
@@ -32,7 +29,7 @@ void MonitoringManager::SetScaleVariable(const string &variablename)
   else
   {
     variabletype_=kregular;
-    variable_ = new TTreeFormula("variable", variablename_.c_str(), chain_);
+    this -> AddVariable("Eop_monitoring_scale",variablename);//method of ECALELFInterface
   }
 }
 
@@ -44,7 +41,7 @@ float MonitoringManager::GetScaleVariableValue(const int &iEle)
     else
       return -999;
   else
-    return variable_ -> EvalInstance(iEle);
+    return this -> GetVariableValue("Eop_monitoring_scale",iEle);//method of ECALELFInterface
 }
 
 
@@ -268,7 +265,6 @@ void  MonitoringManager::FillTimeBins()
       if(this->isSelected(iEle))
       {
 	//cout<<"selected - "<<"run="<<this->GetRunNumber()<<"\tLS="<<this->GetLS()<<"\tT="<<this->GetTime()<<endl;
-	
 	auto bin_iterator = FindBin(this->GetRunNumber(),this->GetLS(),this->GetTime());
 	if(bin_iterator!=timebins.end())
 	  bin_iterator->FillHisto( GetScaleVariableValue(iEle) );

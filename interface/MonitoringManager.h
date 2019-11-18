@@ -13,7 +13,6 @@
 #include "TTree.h"
 #include "TChain.h"
 #include "TString.h"
-#include "TTreeFormula.h"
 #include "TGraphErrors.h"
 #include "TH2F.h"
 #include "TH1F.h"
@@ -48,7 +47,6 @@ class MonitoringManager: public calibrator
   
  protected:
   enum kvariabletype {kregular, kICenergy_over_p};
-  TTreeFormula* variable_;
   int variabletype_;
   std::vector<TimeBin::TimeBin>::iterator last_accessed_bin_;
   std::vector<TimeBin::TimeBin> timebins;

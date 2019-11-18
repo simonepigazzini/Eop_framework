@@ -109,6 +109,11 @@ ECALELFInterface::~ECALELFInterface()
 
   if(eeRing_)
     delete eeRing_;
+
+  for(auto customvariablesiterator : customvariablesmap_)
+    if(customvariablesiterator.second)
+      delete customvariablesiterator.second;
+
 }
 
 Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
@@ -119,6 +124,8 @@ Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
   {
     Ncurrtree_ = chain_->GetTreeNumber();
     selection_->UpdateFormulaLeaves();
+    for(auto customvariablesiterator : customvariablesmap_)
+      customvariablesiterator.second -> UpdateFormulaLeaves();
   }
   return i;
 }
@@ -265,4 +272,14 @@ void ECALELFInterface::PrintSettings()
 
   cout<<"> APPLIED SELECTION: "<<selection_->GetExpFormula().Data()<<endl;
   cout<<"----------------------------------------------------------------------------------"<<endl;
+}
+
+void ECALELFInterface::AddVariable(const string &name, const string &expr)
+{
+  customvariablesmap_[name] = new TTreeFormula(name.c_str(), expr.c_str(), chain_);
+}
+
+double ECALELFInterface::GetVariableValue(const string &name, const Int_t &i)
+{
+  return customvariablesmap_[name] -> EvalInstance(i);
 }
