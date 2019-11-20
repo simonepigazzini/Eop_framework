@@ -65,7 +65,9 @@ class ECALELFInterface
   void                PrintRHEleSummary  (const Int_t &i);
   void                SetSelection       (string selection); 
   void                AddSelection       (string additional_selection_str); 
-  void                PrintSettings      ();    
+  void                PrintSettings      (); 
+  void                AddVariable        (const string &name, const string &expr);
+  double              GetVariableValue   (const string &name, const Int_t &i);
 
  private:
   TEndcapRings* eeRing_;
@@ -75,6 +77,7 @@ class ECALELFInterface
   void BranchExtraCalib(TChain* chain);
 
   TTreeFormula *selection_;
+  std::map <string,TTreeFormula*> customvariablesmap_;
   std::string selection_str_;
   std::map<std::string,TChain*> ch_;
   TChain* chain_;
