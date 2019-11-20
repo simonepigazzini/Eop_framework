@@ -89,9 +89,9 @@ int main(int argc, char* argv[])
     {
       TString method = config.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.method",scale.c_str()));
       method.ToLower(); //convert capital letters to lower case to avoid mis-understanding
-      //if(method=="templatefit")
-      //monitor.RunTemplateFit(scale);
-      //else
+      if(method=="templatefit")
+	monitor.RunTemplateFit(scale);
+      else
 	if(method=="mean")
 	  monitor.RunComputeMean(scale);
 	else

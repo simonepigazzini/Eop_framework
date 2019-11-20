@@ -1,4 +1,5 @@
 #include "MonitoringManager.h"
+#include "histoFunc.h"
 
 using namespace std;
 
@@ -321,7 +322,52 @@ std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t 
   return it_end;
 }
 	     
-	     
+void  MonitoringManager::RunTemplateFit(string scale)
+{
+  cout<<">> RunTemplateFit in function"<<endl;
+  if(h_template_)
+  {
+    cout<<"[WARNING]: a template histogram is already loaded in memory  deleting it"<<endl;
+    delete h_template_;
+  }
+  //Load the template histogram
+  vector<string> templatename = conf_.GetOpt<vector<string> > (Form("LaserMonitoring.scaleMonitor.%s.template",scale.c_str()));
+  string templatekeyname = templatename.at(0);
+  string templatefilename = templatename.at(1);
+  TFile* templatefile = new TFile(templatefilename.c_str(),"READ");
+  h_template_ = (TH1F*) templatefile->Get(templatekeyname.c_str());
+  h_template_ ->SetDirectory(0);
+  templatefile->Close();
+
+  //Build the TF1 from the template histogram
+  float xmin_fit = conf_.GetOpt<float> (Form("LaserMonitoring.scaleMonitor.%s.xmin_fit",scale.c_str()));
+  float xmax_fit = conf_.GetOpt<float> (Form("LaserMonitoring.scaleMonitor.%s.xmax_fit",scale.c_str()));
+  histoFunc* templateHistoFunc = new histoFunc(h_template_);
+  TF1* fitfunc = new TF1("fitfunc",templateHistoFunc, xmin_fit, xmax_fit, 3, "histofunc");
+  fitfunc -> SetParName(0, "Norm");
+  fitfunc -> SetParName(1, "Scale factor");
+  fitfunc -> SetLineWidth(1);
+  fitfunc -> SetNpx(10000);
+  fitfunc -> SetLineColor(kGreen + 2);
+
+  double templateIntegral = h_template_->Integral(h_template_->GetXaxis()->FindBin(xmin_fit), h_template_->GetXaxis()->FindBin(xmax_fit));
+  //Run the fits
+  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  {
+    double binwidthRatio = it_bin->GetBinWidth(1) / h_template_->GetBinWidth(1); 
+    double xNorm = it_bin->GetIntegral(xmin_fit,xmax_fit) / templateIntegral * binwidthRatio;
+    fitfunc -> FixParameter(0, xNorm);
+    fitfunc -> SetParameter(1, 0.99);
+    fitfunc -> FixParameter(2, 0.);
+    
+    //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
+    it_bin->SetVariable("scale_"+scale, it_bin->TemplateFit(fitfunc));
+    
+  }
+
+  delete fitfunc;
+  delete templateHistoFunc;
+}
 		 
 	  
 void  MonitoringManager::RunComputeMean(string scale)

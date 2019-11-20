@@ -1,5 +1,6 @@
 #include "TimeBin.h"
 #include "TMath.h"
+#include "FitUtils.h"
 
 using namespace std;
 
@@ -180,6 +181,14 @@ bool TimeBin::TimeBin::InitHisto( char* name, char* title, const int &Nbin, cons
     return false;
 }
 
+double TimeBin::TimeBin::TemplateFit(TF1* fitfunc)
+{
+  bool isgoodfit = FitUtils::PerseverantFit(h_scale_, fitfunc);
+  if(isgoodfit)
+    return fitfunc->GetParameter(1);
+  else
+    return -999;
+}
 
 double TimeBin::TimeBin::GetMean()
 {
@@ -201,6 +210,16 @@ double TimeBin::TimeBin::GetMedian()
   h_scale_->ComputeIntegral(); // just a precaution
   h_scale_->GetQuantiles(1, &x, &q);
   return x;
+}
+
+double TimeBin::TimeBin::GetIntegral(const float &xmin, const float &xmax)
+{
+  return h_scale_ -> Integral( h_scale_->GetXaxis()->FindBin(xmin) , h_scale_->GetXaxis()->FindBin(xmax) );
+}
+
+double TimeBin::TimeBin::GetBinWidth(const int &ibin)
+{
+  return h_scale_ -> GetBinWidth(ibin);
 }
 
 void TimeBin::TimeBin::SetVariable(const std::string &variablename, const float &variablevalue)

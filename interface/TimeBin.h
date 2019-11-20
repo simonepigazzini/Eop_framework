@@ -61,10 +61,13 @@ class TimeBin
   bool     Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const;
   void     FillHisto(double x) const {h_scale_->Fill(x);} ;
   bool     InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax);
+  double   TemplateFit(TF1* fitfunc);
   double   GetMean();
   //double GetMean(double xmin, double xmax);
   //double GetMean(double evfraction);
   double   GetMedian();
+  double   GetIntegral(const float &xmin, const float &xmax);
+  double   GetBinWidth(const int &ibin);
   //void   SaveAs(std::string outputfilename);  
   void     SetVariable(const std::string &variablename, const float &variablevalue);
   float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
@@ -77,11 +80,9 @@ class TimeBin
   UInt_t timemin_;
   UInt_t timemax_;
   int Nev_;
-  TH1F* h_scale_;//in this way if I define a std::set<TimeBin>, I can modify the histo content 
-  std::map<std::string,float> variablelist_;//in this way if I define a std::set<TimeBins>, I can modify the map content
+  TH1F* h_scale_;
+  std::map<std::string,float> variablelist_;
 
-  //private:
-  //void BranchInputTree();
 
 };
 }
