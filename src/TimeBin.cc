@@ -3,7 +3,7 @@
 
 using namespace std;
 
-TimeBin::TimeBin::TimeBin():
+TimeBin::TimeBin():
   runmin_(0),
   runmax_(0),
   lsmin_(0),
@@ -14,7 +14,7 @@ TimeBin::TimeBin::TimeBin():
   h_scale_(0)
   {}
 
-TimeBin::TimeBin::TimeBin(const TimeBin &bincopy):
+TimeBin::TimeBin(const TimeBin &bincopy):
   runmin_       (bincopy.runmin_),
   runmax_       (bincopy.runmax_),
   lsmin_        (bincopy.lsmin_),
@@ -35,13 +35,70 @@ TimeBin::TimeBin::TimeBin(const TimeBin &bincopy):
   }
 
 
-TimeBin::TimeBin::~TimeBin()
+TimeBin::~TimeBin()
 {
   if(h_scale_)
     delete h_scale_;
 }
 
-void TimeBin::TimeBin::SetBinRanges(const UInt_t &runmin, const UInt_t &runmax, const UShort_t &lsmin, const UShort_t &lsmax, const UInt_t &timemin, const UInt_t &timemax)
+void TimeBin::AddEvent(const UInt_t &run,const UShort_t &ls, const UInt_t &t)
+{
+
+  if(timemax_==0 && timemin_==0)//empty bin
+  {
+    timemax_=timemin_=t;
+    lsmax_=lsmin_=ls;
+    runmax_=runmin_=run;
+  }
+  else
+    if(t<timemin_ || run<runmin_ || (run==runmin_ && ls<lsmin_))
+    {
+      timemin_=t;
+      lsmin_=ls;
+      runmin_=run;
+    }
+    else
+      if(t>timemax_ || run>runmax_ || (run==runmax_ && ls>lsmax_))
+      {
+	timemax_=t;
+	lsmax_=ls;
+	runmax_=run;
+      }
+  Nev_++;
+}
+
+void TimeBin::AddEvent(const TimeBin& other)
+{
+
+  if(timemax_==0 && timemin_==0)//empty bin
+  {
+    timemin_ = other.timemin_;
+    timemax_ = other.timemax_; 
+    lsmin_=    other.lsmin_;
+    lsmax_=    other.lsmax_;
+    runmin_=   other.runmin_;
+    runmax_=   other.runmax_;
+  }
+  else
+  {
+    if(other.timemin_<timemin_ || other.runmin_<runmin_ || (other.runmin_==runmin_ && other.lsmin_<lsmin_))
+    {
+      timemin_=other.timemin_;
+      lsmin_=other.lsmin_;
+      runmin_=other.runmin_;
+    }
+    if(other.timemax_>timemax_ || other.runmax_>runmax_ || (other.runmax_==runmax_ && other.lsmax_>lsmax_))
+    {
+      timemax_=other.timemax_;
+      lsmax_=other.lsmax_;
+      runmax_=other.runmax_;
+    }
+  }
+
+  Nev_ += other.Nev_;
+}  
+
+void TimeBin::SetBinRanges(const UInt_t &runmin, const UInt_t &runmax, const UShort_t &lsmin, const UShort_t &lsmax, const UInt_t &timemin, const UInt_t &timemax)
 {
   runmin_=runmin;
   runmax_=runmax;
@@ -51,12 +108,25 @@ void TimeBin::TimeBin::SetBinRanges(const UInt_t &runmin, const UInt_t &runmax, 
   timemax_=timemax;
 }
 
-void TimeBin::TimeBin::SetNev(const int &Nev_bin)
+void TimeBin::Reset()
+{
+  runmin_=0;
+  runmax_=0;
+  lsmin_=0;
+  lsmax_=0;
+  timemin_=0;
+  timemax_=0;
+  Nev_=0;
+  if(h_scale_)
+    h_scale_->Reset();
+}
+
+void TimeBin::SetNev(const int &Nev_bin)
 {
   Nev_=Nev_bin;
 }
 
-TimeBin::TimeBin& TimeBin::TimeBin::operator=(const TimeBin& other)
+TimeBin& TimeBin::operator=(const TimeBin& other)
 {
   runmin_       = other.runmin_;
   runmax_       = other.runmax_;
@@ -76,10 +146,10 @@ TimeBin::TimeBin& TimeBin::TimeBin::operator=(const TimeBin& other)
     h_scale_=0;
 }
 
-bool TimeBin::TimeBin::operator<(const TimeBin& other) const
+bool TimeBin::operator<(const TimeBin& other) const
 {
   /*
-  cout<<">> In function TimeBin::TimeBin::operator<"<<endl;
+  cout<<">> In function TimeBin::operator<"<<endl;
   cout<<">> Comparing"<<endl
       <<"(runmin,runmax,lsmin,lsmax,timemin,timemax)=("
       << runmin_ <<","<< runmax_ <<","<< lsmin_ <<","<< lsmax_ <<","<< timemin_ <<","<< timemax_ <<")"<<endl;
@@ -105,7 +175,7 @@ bool TimeBin::TimeBin::operator<(const TimeBin& other) const
 
 }
 
-void TimeBin::TimeBin::BranchOutput(TTree* outtree)
+void TimeBin::BranchOutput(TTree* outtree)
 {
   outtree->Branch("runmin",&runmin_);
   outtree->Branch("runmax",&runmax_);
@@ -121,7 +191,7 @@ void TimeBin::TimeBin::BranchOutput(TTree* outtree)
   }
 }
 
-void TimeBin::TimeBin::BranchInput(TTree* intree)
+void TimeBin::BranchInput(TTree* intree)
 {
   intree->SetBranchAddress("runmin",&runmin_);
   intree->SetBranchAddress("runmax",&runmax_);
@@ -148,28 +218,28 @@ void TimeBin::TimeBin::BranchInput(TTree* intree)
 }
 
 
-bool TimeBin::TimeBin::Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const
+bool TimeBin::Match(const UInt_t &run, const UShort_t &ls) const
+{
+  if(run<runmin_)
+    return false;
+  if(run>runmax_)
+    return false;
+  if(run==runmin_ && ls<lsmin_)
+    return false;
+  if(run==runmax_ && ls>lsmax_)
+    return false;
+  return true;
+}
+
+bool TimeBin::Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const
 {
   //cout<<"try to match "<<time<<" in "<<"("<<timemin_<<","<<timemax_<<")"<<endl;
   if(time>=timemin_ && time<=timemax_)
-  {
-    //cout<<"try to match "<<run<<" in "<<"("<<runmin_<<","<<runmax_<<")"<<endl;
-    if(run>=runmin_ && run<=runmax_)
-    {
-      //cout<<"try to match "<<ls<<" in "<<"("<<lsmin_<<","<<lsmax_<<")"<<endl;
-      if(ls>=lsmin_ && ls<=lsmax_)
-      {
-	//cout<<"match"<<endl;
-	return true;
-      }
-    }
-  }
-  //cout<<"NO match"<<endl;
+    return Match(run,ls);
   return false;
-
 }
 	
-bool TimeBin::TimeBin::InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax)
+bool TimeBin::InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax)
 {
   if(!h_scale_)
   {
@@ -181,7 +251,7 @@ bool TimeBin::TimeBin::InitHisto( char* name, char* title, const int &Nbin, cons
 }
 
 
-double TimeBin::TimeBin::GetMean()
+double TimeBin::GetMean()
 {
   if(!h_scale_)
     cerr<<"[ERROR]: histogram is not booked"<<endl;
@@ -190,7 +260,7 @@ double TimeBin::TimeBin::GetMean()
 }
 
 
-double TimeBin::TimeBin::GetMedian()
+double TimeBin::GetMedian()
 {
   if(!h_scale_)
     cerr<<"[ERROR]: histogram is not booked"<<endl;
@@ -203,13 +273,13 @@ double TimeBin::TimeBin::GetMedian()
   return x;
 }
 
-void TimeBin::TimeBin::SetVariable(const std::string &variablename, const float &variablevalue)
+void TimeBin::SetVariable(const std::string &variablename, const float &variablevalue)
 {
   cout<<"setting variablelist_["<<variablename<<"]="<<variablevalue<<endl;
   variablelist_[variablename] = variablevalue;
 }
 
-void TimeBin::TimeBin::PrintVariables()
+void TimeBin::PrintVariables()
 {
   for(map<string,float>::iterator it=variablelist_.begin(); it!=variablelist_.end(); ++it)
     cout<<it->first<<endl;

@@ -5,12 +5,12 @@ using namespace std;
 MonitoringManager::MonitoringManager(CfgManager conf):
   calibrator(conf),
   conf_(conf),
-  h_template_(0),
-  last_accessed_bin_(timebins.end())
+  h_template_(0)
 {
   label_ = conf.GetOpt<string> ("Input.label");  
   variablename_ = conf.GetOpt<string> ("LaserMonitoring.variable");
   SetScaleVariable(variablename_);
+  last_accessed_bin_=timebins.end();
 }
 
 MonitoringManager::~MonitoringManager()
@@ -73,11 +73,10 @@ void  MonitoringManager::RunDivide()
   int    Nevmax_bin     = conf_.GetOpt<int>          ("LaserMonitoring.RunDivide.Nevmax_bin");
   float  maxduration    = 60*60*conf_.GetOpt<float>  ("LaserMonitoring.RunDivide.maxduration");//It is provided in hours
 
-  //Loop on events to create a map with key=(run,LS) and value=(time0,timef,multiplicity)
+  //Loop on events to build bins corresponding to single lumisections, they will be merged afterward
   //Exploit methods inherited from ECALELFInterface to access the ntuple content
   long Nentries = this->GetEntries();
   cout<<Nentries<<" total entries\n"<<endl;
-  map<struct TimeBin::runlumi,struct TimeBin::timeweight> lumisec_list;
   for(long ientry=0; ientry<Nentries; ++ientry)
   {
     this->GetEntry(ientry);
@@ -89,84 +88,54 @@ void  MonitoringManager::RunDivide()
     if(w)
     {
       unsigned t = this->GetTime();
-      struct TimeBin::runlumi ev{this->GetRunNumber(), this->GetLS()};
-      auto itr = lumisec_list.find(ev);
-      if( itr == lumisec_list.end()) 
-      {
-	lumisec_list[ev].weight=w;
-	lumisec_list[ev].time0=t;
-	lumisec_list[ev].timef=t;
-      }
+      auto run =   this->GetRunNumber();
+      auto ls =    this->GetLS();
+      auto bin_iterator = FindBin(run,ls);
+      if(bin_iterator!=timebins.end())
+	bin_iterator->AddEvent(run,ls,t);
       else
       {
-	itr->second.weight+=w;
-	if(t<itr->second.time0)
-	  itr->second.time0=t;
-	else
-	  if(t>itr->second.timef)
-	    itr->second.timef=t;
+	TimeBin newbin;
+	newbin.SetBinRanges(run,run,ls,ls,t,t);
+	newbin.SetNev(w);
+	timebins.push_back(newbin);
+	last_accessed_bin_ = timebins.end();
       }
-      //cout<<"increment "<<w<<endl;
     }
   }
-  
   cout<<endl;
-  cout<<">> Merging lumisections"<<endl;
-  //Merge the lumisections to create TimeBins with about the required number of events
-  struct TimeBin::runlumi ev_begin   = (lumisec_list.begin())->first;
-  struct TimeBin::runlumi ev_end     = (lumisec_list.begin())->first;
-  UInt_t                  time_begin = (lumisec_list.begin())->second.time0;
-  UInt_t                  time_end   = (lumisec_list.begin())->second.timef;
-  int                     Nev_bin    = 0;
-  TimeBin::TimeBin        bin;
-  for(auto it=lumisec_list.begin() ; it!=lumisec_list.end() ; ++it )
-  {
-    if(time_end - time_begin > maxduration)
-    {
-      //cout<<"exceed max delta t --> close bin"<<endl;
-      bin.SetBinRanges(ev_begin.runNumber, ev_end.runNumber, ev_begin.lumiBlock, ev_end.lumiBlock, time_begin, time_end);
-      bin.SetNev(Nev_bin);
-      timebins.push_back(bin);
 
-      //reset
-      ev_begin=it->first;
-      ev_end=it->first;
-      time_begin=it->second.time0;
-      time_end=it->second.timef;
-      Nev_bin=0;
+  //Merge the lumisections to create TimeBins with about the required number of events
+  cout<<">> Merging lumisections"<<endl;
+  std::sort(timebins.begin(), timebins.end());
+  vector<TimeBin> ls_bins;
+  timebins.swap(ls_bins);//switch the contents of timebins vector with the one of ls_bins vector(empty)
+  auto lsbin_iterator = ls_bins.begin();
+  TimeBin bufferbin(*lsbin_iterator);
+  lsbin_iterator++;
+  while(lsbin_iterator != ls_bins.end())
+  {
+    if(bufferbin.DeltaT() > maxduration)
+    {
+      timebins.push_back(bufferbin);
+      bufferbin.Reset();
     }
     else
-      if(Nev_bin>=Nevmax_bin)
+      if(bufferbin.GetNev() >= Nevmax_bin)
       {
-	//cout<<"reach "<<Nev_bin<<" events in the bin --> close bin"<<endl;
-	bin.SetBinRanges(ev_begin.runNumber, ev_end.runNumber, ev_begin.lumiBlock, ev_end.lumiBlock, time_begin, time_end);
-	bin.SetNev(Nev_bin);
-	timebins.push_back(bin);
-
-	//reset
-	ev_begin=it->first;
-	ev_end=it->first;
-	time_begin=it->second.time0;
-	time_end=it->second.timef;
-	Nev_bin=0;
-      }	
+	timebins.push_back(bufferbin);
+	bufferbin.Reset();
+      }
       else
       {
-	ev_end=it->first;
-	time_end=it->second.timef;
+	bufferbin.AddEvent(*lsbin_iterator);
+	lsbin_iterator++;
       }
-
-    ///cout<<(it->first).runNumber<<"\t"<<(it->first).lumiBlock<<"\t"<<(it->second).time0<<"\t"<<(it->second).timef<<"\t"<<(it->second).weight<<"\t+\t"<<Nev_bin<<endl;    
-    Nev_bin+=it->second.weight;
   }
 
-  if((ev_begin.lumiBlock!=ev_end.lumiBlock || ev_begin.runNumber!=ev_end.runNumber) && Nev_bin>=Nevmax_bin*0.5)
-  {
-    //cout<<"last bin with "<<Nev_bin<<" events --> close bin"<<endl;
-    bin.SetBinRanges(ev_begin.runNumber, ev_end.runNumber, ev_begin.lumiBlock, ev_end.lumiBlock, time_begin, time_end);
-    bin.SetNev(Nev_bin);
-    timebins.push_back(bin);
-  }
+  if(bufferbin.GetNev() >= Nevmax_bin*0.5)
+    timebins.push_back(bufferbin);
+
   std::sort(timebins.begin(), timebins.end());
 
 }
@@ -177,7 +146,7 @@ void  MonitoringManager::SaveTimeBins(std::string outfilename, std::string write
   TFile* outfile = new TFile(outfilename.c_str(), writemethod.c_str());
   outfile->cd();
   TTree* outtree = new TTree(label_.c_str(), label_.c_str());
-  TimeBin::TimeBin bin( *(timebins.begin()) );
+  TimeBin bin( *(timebins.begin()) );
   bin.BranchOutput(outtree);
   
   for(auto bincontent : timebins)
@@ -213,13 +182,13 @@ void  MonitoringManager::LoadTimeBins(std::string option)
     cout<<"[ERROR]: can't get tree "<<label_<<" in the file"<<endl;
     return;
   }
-  TimeBin::TimeBin bin;
+  TimeBin bin;
   bin.BranchInput(intree);
   Long64_t Nbins = intree->GetEntries();
   for(Long64_t ibin=0; ibin<Nbins; ++ibin)
   {
     intree->GetEntry(ibin);//tree entry is copied in bin
-    TimeBin::TimeBin bincopy(bin);//perhaps not needed, but for security I avoid to make a mess with pointers
+    TimeBin bincopy(bin);//perhaps not needed, but for security I avoid to make a mess with pointers
     timebins.push_back(bincopy);
   }
   
@@ -248,7 +217,7 @@ void  MonitoringManager::FillTimeBins()
   if(!BookHistos())
   {
     cout<<">> Cannot book the histos... Maybe you have already filled them " << endl;
-									  return;
+    return;
   }
 
   
@@ -276,12 +245,53 @@ void  MonitoringManager::FillTimeBins()
 
 }
 
-std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time)
+std::vector<TimeBin>::iterator MonitoringManager::FindBin(const UInt_t &run, const UShort_t &ls)
 {
   //cout<<"finding bin"<<endl;
   //usually events are in the same time bin of the previous iteration or in adjacent timebins so i start to look for them from there
-  std::vector<TimeBin::TimeBin>::iterator it_end   = timebins.end();
-  std::vector<TimeBin::TimeBin>::iterator it_begin = timebins.begin();
+  std::vector<TimeBin>::iterator it_end   = timebins.end();
+  std::vector<TimeBin>::iterator it_begin = timebins.begin();
+
+  if(last_accessed_bin_!=it_end)
+  {
+    if(last_accessed_bin_ -> Match(run,ls))
+      return last_accessed_bin_;
+
+    if(last_accessed_bin_>it_begin)
+      if((last_accessed_bin_-1) -> Match(run,ls))
+      {
+	last_accessed_bin_--;
+	return (last_accessed_bin_);
+      }
+
+    if(last_accessed_bin_<it_end-1)
+       if((last_accessed_bin_+1) -> Match(run,ls))
+       {
+	 last_accessed_bin_++;
+	 return (last_accessed_bin_);
+       }
+  }    
+  //if I am here, unfortunately I have to perform a search through the entire set
+  //cout<<"last_accessed_bin_=it_end"<<endl;
+  for(std::vector<TimeBin>::iterator it_bin = it_begin; it_bin<it_end; ++it_bin)//not the smarter way considering that the bins are ordered --> can be improved
+    if(it_bin -> Match(run,ls))
+    {
+      //cout<<"match with bin "<<it_bin-it_begin<<endl;
+      last_accessed_bin_=it_bin;
+      return (last_accessed_bin_);
+    }
+
+  //if I am here, I didn't found any match
+  return it_end;
+}
+
+
+std::vector<TimeBin>::iterator MonitoringManager::FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time)
+{
+  //cout<<"finding bin"<<endl;
+  //usually events are in the same time bin of the previous iteration or in adjacent timebins so i start to look for them from there
+  std::vector<TimeBin>::iterator it_end   = timebins.end();
+  std::vector<TimeBin>::iterator it_begin = timebins.begin();
 
   if(last_accessed_bin_!=it_end)
   {
@@ -305,7 +315,7 @@ std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t 
   }    
   //if I am here, unfortunately I have to perform a search through the entire set
   //cout<<"last_accessed_bin_=it_end"<<endl;
-  for(std::vector<TimeBin::TimeBin>::iterator it_bin = it_begin; it_bin<it_end; ++it_bin)//not the smarter way considering that the bins are ordered --> can be improved
+  for(std::vector<TimeBin>::iterator it_bin = it_begin; it_bin<it_end; ++it_bin)//not the smarter way considering that the bins are ordered --> can be improved
     if(it_bin -> Match(run,ls,time))
     {
       //cout<<"match with bin "<<it_bin-it_begin<<endl;
@@ -323,7 +333,7 @@ std::vector<TimeBin::TimeBin>::iterator MonitoringManager::FindBin(const UInt_t 
 void  MonitoringManager::RunComputeMean(string scale)
 {
   cout<<">> RunComputeMean in function"<<endl;
-  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
   {
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
     it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
@@ -334,7 +344,7 @@ void  MonitoringManager::RunComputeMean(string scale)
 void  MonitoringManager::RunComputeMedian(string scale)
 {
   cout<<">> RunComputeMedian in function"<<endl;
-  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
   {
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
     it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
