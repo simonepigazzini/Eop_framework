@@ -9,6 +9,7 @@
 #include "TH1F.h"
 #include "TTree.h"
 
+using namespace std;
 
 class TimeBin
 {
@@ -39,7 +40,9 @@ class TimeBin
   void     FillHisto(double x) const {h_scale_->Fill(x);} ;
   bool     InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax);
   int      GetNev() const {return Nev_;};
-  double   TemplateFit(TF1* fitfunc);
+  double   GetXminScale() const {return h_scale_->GetXaxis()->GetXmin();};
+  double   GetXmaxScale() const {return h_scale_->GetXaxis()->GetXmax();};
+  double   TemplateFit(TF1* fitfunc, string fitopt="QRL+", int nTrial=10, string TemplatePlotsFolder="");
   double   GetMean();
   //double GetMean(double xmin, double xmax);
   //double GetMean(double evfraction);
@@ -50,6 +53,7 @@ class TimeBin
   void     SetVariable(const std::string &variablename, const float &variablevalue);
   float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
   void     PrintVariables();  
+  void     UpdateNev();
  protected:
   UInt_t runmin_;
   UInt_t runmax_;

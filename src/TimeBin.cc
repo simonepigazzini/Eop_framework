@@ -251,9 +251,9 @@ bool TimeBin::InitHisto( char* name, char* title, const int &Nbin, const double 
     return false;
 }
 
-double TimeBin::TimeBin::TemplateFit(TF1* fitfunc)
+double TimeBin::TimeBin::TemplateFit(TF1* fitfunc, string fitopt, int nTrial, string TemplatePlotsFolder)
 {
-  bool isgoodfit = FitUtils::PerseverantFit(h_scale_, fitfunc);
+  bool isgoodfit = FitUtils::PerseverantFit(h_scale_, fitfunc, fitopt, nTrial, TemplatePlotsFolder);
   if(isgoodfit)
     return fitfunc->GetParameter(1);
   else
@@ -305,3 +305,13 @@ void TimeBin::PrintVariables()
 
 }
 
+void TimeBin::UpdateNev()
+{
+  if(h_scale_)
+    if( Nev_ != h_scale_->GetEntries() )
+    {
+      cout<<"[WARNING]: histagram content ("<<h_scale_->GetEntries()<<") is different from expected number of events ("<<Nev_<<")"<<endl;
+      cout<<"           updating the number of events"<<endl;
+      Nev_ = h_scale_->GetEntries();
+    }
+}

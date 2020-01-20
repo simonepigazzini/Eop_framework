@@ -13,7 +13,7 @@ using namespace std;
 namespace FitUtils
 {
   
-  bool PerseverantFit( TH1* h, TF1* fitfunc, int nTrial=10, string TemplatePlotsFolder="")
+  bool PerseverantFit( TH1* h, TF1* fitfunc, string fitopt="QRL+", int nTrial=10, string TemplatePlotsFolder="")
   {
     TFitResultPtr rp;
     int fStatus;
@@ -25,18 +25,23 @@ namespace FitUtils
     for(int nTrial = 0; nTrial < 10; ++nTrial)
     {
       c_template_fit.cd();
-      rp = h -> Fit(fitfunc, "QRL+");
+      rp = h -> Fit(fitfunc, fitopt.c_str());
       fStatus = rp;
       if(fStatus != 4 && fitfunc->GetParError(1) != 0. )
       {
 	if(TemplatePlotsFolder!="")
+	{
 	  c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
+	  c_template_fit.SaveAs( Form("%s/fit_%s.root",TemplatePlotsFolder.c_str(), h->GetName()) );
+	}
 	return true;
       }
     }
     if(TemplatePlotsFolder!="")
+    {
       c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
-
+      c_template_fit.SaveAs( Form("%s/fit_%s.root",TemplatePlotsFolder.c_str(), h->GetName()) );
+    }
     return false;
   }
 

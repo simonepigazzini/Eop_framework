@@ -248,7 +248,7 @@ int main(int argc, char** argv)
 
     //fit positron correction
     //cout << "***** Positron ";
-    bool goodFit = FitUtils::PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), 10, TemplatePlotsFolder);
+    bool goodFit = FitUtils::PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), "QRL+", 10, TemplatePlotsFolder);
     if(goodFit)
     {
       ++Ngoodfits;
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 
     //fit electron correction
     //cout << "***** Electron ";
-    goodFit = FitUtils::PerseverantFit( h_Mee_PElectron_phibin.back(), fitfunc_Mee_PElectron.back(), 10);
+    goodFit = FitUtils::PerseverantFit( h_Mee_PElectron_phibin.back(), fitfunc_Mee_PElectron.back(), "QRL+", 10);
     if(goodFit)
     {
       ++Ngoodfits;

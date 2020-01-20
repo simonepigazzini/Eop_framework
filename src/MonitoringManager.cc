@@ -174,10 +174,27 @@ void  MonitoringManager::LoadTimeBins(std::string option)
       return;
     }
 
-  string inputfilename = conf_.GetOpt<string>  ("LaserMonitoring.scaleMonitor.runranges");
-  cout<<">> Reading file "<<inputfilename<<endl;
-  TFile* inputfile = new TFile(inputfilename.c_str(),"READ");
-  TTree* intree = (TTree*) inputfile->Get(label_.c_str());
+  vector<string> inputconf = conf_.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
+  TFile* inputfile;
+  TTree* intree;
+  if(inputconf.size()==1)
+  {
+    cout<<">> Loading TTree "<<label_<<" (default name) from file "<<inputconf.at(0)<<endl;
+    inputfile = new TFile(inputconf.at(0).c_str(),"READ");
+    intree = (TTree*) inputfile->Get(label_.c_str());
+  }
+  else
+    if(inputconf.size()==2)
+    {
+      string objname = inputconf.at(0);
+      string inputfilename = inputconf.at(1);
+      cout<<">> Loading TTree "<<objname<<" (default name) from file "<<inputfilename<<endl;
+      inputfile = new TFile(inputfilename.c_str(),"READ");
+      intree = (TTree*) inputfile->Get(objname.c_str());
+    }
+    else
+      cout<<"[ERROR]: option LaserMonitoring.scaleMonitor.runranges has wrong syntax"<<endl;
+    
   if(!intree)
   {
     cout<<"[ERROR]: can't get tree "<<label_<<" in the file"<<endl;
@@ -243,6 +260,10 @@ void  MonitoringManager::FillTimeBins()
   }
 
   cout<<">> Histos filled"<<endl;
+
+  //Updating Nev of the bins (just a precaution)
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+    it_bin->UpdateNev();
 
 }
 
@@ -346,8 +367,18 @@ void  MonitoringManager::RunTemplateFit(string scale)
   templatefile->Close();
 
   //Build the TF1 from the template histogram
-  float xmin_fit = conf_.GetOpt<float> (Form("LaserMonitoring.scaleMonitor.%s.xmin_fit",scale.c_str()));
-  float xmax_fit = conf_.GetOpt<float> (Form("LaserMonitoring.scaleMonitor.%s.xmax_fit",scale.c_str()));
+  float xmin_fit = conf_.GetOpt<float>  (Form("LaserMonitoring.scaleMonitor.%s.xmin_fit",scale.c_str()));
+  float xmax_fit = conf_.GetOpt<float>  (Form("LaserMonitoring.scaleMonitor.%s.xmax_fit",scale.c_str()));
+  string fitopt  = "QRL+";
+  int Ntrialfit  = 10;
+  string TemplatePlotsFolder="";
+  if(conf_.OptExist(Form("LaserMonitoring.scaleMonitor.%s.fitoptions",scale.c_str())))
+    fitopt = conf_.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.fitoptions",scale.c_str()));
+  if(conf_.OptExist(Form("LaserMonitoring.scaleMonitor.%s.Ntrialfit",scale.c_str())))
+    Ntrialfit = conf_.GetOpt<int> (Form("LaserMonitoring.scaleMonitor.%s.Ntrialfit",scale.c_str()));
+  if(conf_.OptExist(Form("LaserMonitoring.scaleMonitor.%s.fitplots_folder",scale.c_str())))
+    TemplatePlotsFolder=conf_.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.fitplots_folder",scale.c_str()));
+
   histoFunc* templateHistoFunc = new histoFunc(h_template_);
   TF1* fitfunc = new TF1("fitfunc",templateHistoFunc, xmin_fit, xmax_fit, 3, "histofunc");
   fitfunc -> SetParName(0, "Norm");
@@ -358,17 +389,20 @@ void  MonitoringManager::RunTemplateFit(string scale)
 
   double templateIntegral = h_template_->Integral(h_template_->GetXaxis()->FindBin(xmin_fit), h_template_->GetXaxis()->FindBin(xmax_fit));
   //Run the fits
-  for(std::vector<TimeBin::TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
   {
     double binwidthRatio = it_bin->GetBinWidth(1) / h_template_->GetBinWidth(1); 
+    if(xmin_fit <= it_bin->GetXminScale() || xmax_fit >= it_bin->GetXmaxScale())
+      cout<<"[WARNING]: the fit range is wider or equal to the histogram range! Possible issues in the normalization or fitting..."<<endl;
     double xNorm = it_bin->GetIntegral(xmin_fit,xmax_fit) / templateIntegral * binwidthRatio;
     fitfunc -> FixParameter(0, xNorm);
     fitfunc -> SetParameter(1, 0.99);
     fitfunc -> FixParameter(2, 0.);
     
+    //cout<<"prefit fitfunc integral = "<<fitfunc->Integral(xmin_fit,xmax_fit)<<endl;
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
-    it_bin->SetVariable("scale_"+scale, it_bin->TemplateFit(fitfunc));
-    
+    it_bin->SetVariable("scale_"+scale, it_bin->TemplateFit(fitfunc,fitopt,Ntrialfit,TemplatePlotsFolder));
+    //cout<<"postfit fitfunc integral = "<<fitfunc->Integral(xmin_fit,xmax_fit)<<endl;
   }
 
   delete fitfunc;
@@ -382,7 +416,13 @@ void  MonitoringManager::RunComputeMean(string scale)
   for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
   {
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
-    it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
+    if(it_bin->GetNev()==0)
+    {
+      cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
+      it_bin->SetVariable("scale_"+scale, -999.);
+    }
+    else
+      it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
   }
 }
 
@@ -393,7 +433,13 @@ void  MonitoringManager::RunComputeMedian(string scale)
   for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
   {
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
-    it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
+    if(it_bin->GetNev()==0)
+    {
+      cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
+      it_bin->SetVariable("scale_"+scale, -999.);
+    }
+    else
+      it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
   }
 }
 

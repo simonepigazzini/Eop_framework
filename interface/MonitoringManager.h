@@ -36,7 +36,7 @@ class MonitoringManager: public calibrator
   void  FillTimeBins();
   std::vector<TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls);
   std::vector<TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time );
-  
+
   //void  AddScale(std::string variable, int Nbin, float xmin, float xmax){};
   void  RunTemplateFit(string scale);
   void  RunComputeMean(string scale);
