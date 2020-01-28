@@ -20,7 +20,7 @@ print("-------------------------------------------------------------------------
 #parameters
 current_dir = os.getcwd();
 ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/2018/102X_dataRun2_Sep2018Rereco_v1_ULbaseCond/"#parent folder containing all the ntuples of interest
-tag_list = ["Run2018A","Run2018B","Run2018C","Run2018D"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
+tag_list = ["Run2018"]#["Run2018A","Run2018B","Run2018C","Run2018D"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
 ignored_ntuples_label_list = ["obsolete","failed"]#ntuples containing anywhere in the path these labels will be ignored (eg corrupted files within the given tag_list)
 
 #parse arguments
@@ -109,6 +109,7 @@ for iFile in range(0,len(selected_filelist)):
             replaced_contents = replaced_contents.replace("IPHIMAX",str(phimax)) 
             replaced_contents = replaced_contents.replace("OUTPUT_RUNDIVIDE","%s/out_file_%i_runranges.root"%(outdir,iFile))
             replaced_contents = replaced_contents.replace("OUTPUT_SCALEMONITORING","%s/out_file_%i_scalemonitoring.root"%(outdir,iFile))
+            replaced_contents = replaced_contents.replace("OUTPUT_FOLDER",outdir)
             cfgfilename=jobdir+"/config.cfg"
             with open(cfgfilename, "w") as fo:
                 fo.write(replaced_contents)

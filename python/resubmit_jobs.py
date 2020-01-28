@@ -6,8 +6,8 @@ import harness_definition
 #parse arguments
 parser = OptionParser()
 parser.add_option('--submit',          action='store_true',             dest='submit',          default=False,      help='submit jobs')
-parser.add_option("--expectedoutput",  action="store",      type="str", dest="expectedoutput",                      help="expected output filename syntax")
-parser.add_option("--Nfiles",          action="store",      type="int", dest="Nfile",           default=1,          help="number of output files for each harness")
+parser.add_option("--expectedoutput",  action="store",      type="str", dest="expectedoutput",                      help="expected output filename syntax (keywords are HARNESS and FILE)")
+parser.add_option("--Nfiles",          action="store",      type="int", dest="Nfile",           default=1,          help="number of output files for each harness (keywords are HARNESS and FILE)")
 parser.add_option("--condorsub",       action="store",      type="str", dest="condorsub",                           help="condor submission file")
 parser.add_option("--script",          action="store",      type="str", dest="script",                              help="script syntax")
 
