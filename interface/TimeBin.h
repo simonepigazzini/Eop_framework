@@ -42,8 +42,9 @@ class TimeBin
   int      GetNev() const {return Nev_;};
   double   GetXminScale() const {return h_scale_->GetXaxis()->GetXmin();};
   double   GetXmaxScale() const {return h_scale_->GetXaxis()->GetXmax();};
-  double   TemplateFit(TF1* fitfunc, string fitopt="QRL+", int nTrial=10, string TemplatePlotsFolder="");
+  bool     Fit(TF1* fitfunc, string fitopt="QRL+", int nTrial=10, string TemplatePlotsFolder="");
   double   GetMean();
+  double   GetMeanError();
   //double GetMean(double xmin, double xmax);
   //double GetMean(double evfraction);
   double   GetMedian();

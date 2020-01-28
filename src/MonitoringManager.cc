@@ -404,7 +404,18 @@ void  MonitoringManager::RunTemplateFit(string scale)
     
     //cout<<"prefit fitfunc integral = "<<fitfunc->Integral(xmin_fit,xmax_fit)<<endl;
     //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
-    it_bin->SetVariable("scale_"+scale, it_bin->TemplateFit(fitfunc,fitopt,Ntrialfit,TemplatePlotsFolder));
+    bool isgoodfit = it_bin->Fit(fitfunc,fitopt,Ntrialfit,TemplatePlotsFolder);
+    float fitscale = fitfunc->GetParameter(1);
+    if(isgoodfit && fitscale!=0)
+    {
+      it_bin->SetVariable("scale_"+scale,    1./fitscale);
+      it_bin->SetVariable("scaleunc_"+scale, fitfunc->GetParError(1) / fitscale / fitscale);
+    }
+    else
+    {
+      it_bin->SetVariable("scale_"+scale,    -999);
+      it_bin->SetVariable("scaleunc_"+scale, 0);
+    }
     //cout<<"postfit fitfunc integral = "<<fitfunc->Integral(xmin_fit,xmax_fit)<<endl;
   }
 
@@ -423,9 +434,13 @@ void  MonitoringManager::RunComputeMean(string scale)
     {
       cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
       it_bin->SetVariable("scale_"+scale, -999.);
+      it_bin->SetVariable("scaleunc_"+scale, 0.);
     }
     else
+    {
       it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
+      it_bin->SetVariable("scaleunc_"+scale, it_bin->GetMeanError());
+    }
   }
 }
 
@@ -440,9 +455,13 @@ void  MonitoringManager::RunComputeMedian(string scale)
     {
       cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
       it_bin->SetVariable("scale_"+scale, -999.);
+      it_bin->SetVariable("scaleunc_"+scale, 0.);
     }
     else
+    {
       it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
+      it_bin->SetVariable("scaleunc_"+scale, it_bin->GetMeanError());
+    }
   }
 }
 
