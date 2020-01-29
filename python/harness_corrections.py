@@ -69,6 +69,7 @@ else:
 
 import ROOT as ROOT
 ROOT.gROOT.SetBatch(1)
+ROOT.gErrorIgnoreLevel = ROOT.kWarning #switch off 'Info in <TCanvas::Print>: blabla'
 
 #build the dictionary of the TChains
 print "building the chains"
@@ -90,6 +91,7 @@ graph_dict = {}
 for harnessname, chain in chain_dict.items():
     #print harnessname+" - "+str(chain.GetEntries())
     if chain.GetEntries()<=0: 
+        print "[WARNING]: %s chain is empty --> skip it"%harnessname
         continue
     if(options.yuncname!=""):
         Npoints = chain.Draw( "%s:%s:%s"%(options.yname,options.xname,options.yuncname), 
@@ -165,7 +167,7 @@ if options.GetPointCorrections:
     IC = {} #IC is a list of dictionaries, i.e. IC [iIOV] [ix] [iy] 
     print "Loop over harnesses"
     for harnessname, chain in chain_dict.items():
-        print "doing harness", harnessname
+        #print "doing harness", harnessname
         if chain.GetEntries()!=0:
             Npoints = chain.Draw( "%s:runmin:lsmin:runmax:lsmax"%options.yname, 
                                   "timemin>%f && timemax<%f"%(options.t_min,options.t_max),

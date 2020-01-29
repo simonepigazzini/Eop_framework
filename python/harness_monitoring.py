@@ -21,6 +21,8 @@ print("-------------------------------------------------------------------------
 current_dir = os.getcwd();
 ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/2018/102X_dataRun2_Sep2018Rereco_v1_ULbaseCond/"#parent folder containing all the ntuples of interest
 tag_list = ["Run2018"]#["Run2018A","Run2018B","Run2018C","Run2018D"]#tag for the monitoring = any label in the ntuple path identifying univoquely the ntuples of interest
+#ntuple_dir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/ecalelf/ntuples/13TeV/ALCARERECO/UltraRereco2017_2feb2019_AllCorrections/"
+#tag_list = ["Run2017"]
 ignored_ntuples_label_list = ["obsolete","failed"]#ntuples containing anywhere in the path these labels will be ignored (eg corrupted files within the given tag_list)
 
 #parse arguments
