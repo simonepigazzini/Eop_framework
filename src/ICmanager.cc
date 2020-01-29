@@ -5,193 +5,198 @@
 
 using namespace std;
 
-ICmanager::ICmanager(CfgManager conf):
-  xtal_(0)
+ICmanager::ICmanager(CfgManager conf)
 {
+  InitIC(1);
   //-------------------------------------
   //load input IC
   if(conf.OptExist("Input.inputIC"))
     LoadIC( conf.GetOpt<std::vector<std::string> > ("Input.inputIC") );
   else
-    if(conf.OptExist("Input.ietamin") && conf.OptExist("Input.ietamax") && conf.OptExist("Input.iphimin") && conf.OptExist("Input.iphimax"))
-    {
-      ietamin_ = conf.GetOpt<int> ("Input.ietamin");
-      ietamax_ = conf.GetOpt<int> ("Input.ietamax");
-      iphimin_ = conf.GetOpt<int> ("Input.iphimin");
-      iphimax_ = conf.GetOpt<int> ("Input.iphimax");
-      CreateIC();
-    }
-    else
-      cout<<"[WARNING]: no inputIC, nor ietamin&&ietamax&&iphimin&&iphimax found in Input in cfg"<<endl;
+    cout<<"[WARNING]: no inputIC found in Input in cfg"<<endl;
   
 }
 
-ICmanager::ICmanager(const std::vector<std::string> &ICcfg):
-  xtal_(0)
+ICmanager::ICmanager(const std::vector<std::string> &ICcfg)
 {
+  InitIC(1);
   LoadIC( ICcfg );
 }
 
-ICmanager::ICmanager(int ietamin, int ietamax, int iphimin, int iphimax):
-  xtal_(0),
-  ietamin_(ietamin),
-  ietamax_(ietamax),
-  iphimin_(iphimin),
-  iphimax_(iphimax)
+ICmanager::ICmanager()
 {  
-  CreateIC();
+  InitIC(1);
 }  
 
 ICmanager::~ICmanager()
-{
-  delete [] xtal_;
-}
+{ }
 
-void ICmanager::LoadIC(TH2D* ICmap)
+void ICmanager::LoadIC(TH2D* ICmap, const int &iz)
 {
-  Neta_=ICmap->GetNbinsY();
-  ietamin_=ICmap->GetYaxis()->GetXmin();
-  ietamax_=ICmap->GetYaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
-  Nphi_=ICmap->GetNbinsX();
-  iphimin_=ICmap->GetXaxis()->GetXmin();
-  iphimax_=ICmap->GetXaxis()->GetXmax()-1;//i want the left limit of last bin, not the right one
-  //cout<<">>> Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax<<"] and Nphi="<<Nphi<<" in ["<<iphimin_<<","<<iphimax<<"]"<<endl;
-  
-  xtal_ = new crystal[Neta_*Nphi_];
-  for(int xbin=1; xbin<Nphi_+1; ++xbin)
-    for(int ybin=1; ybin<Neta_+1; ++ybin)
-    {
-      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
-      xtal_[index].IC = ICmap->GetBinContent(xbin,ybin); 
-      xtal_[index].status = 1;
-    }
-
+  timedependent_ICvalues_.clear();
+  timedependent_ICvalues_.push_back( GetICFromTH2D(ICmap,iz) );
 }
 
 void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
 {
-  if(xtal_)
-    delete[] xtal_;
-  string objkey   = ICcfg[0];
-  string filename = ICcfg[1];
-  if(objkey!="txtEB")
+  timedependent_ICvalues_.clear();
+
+  string inputtype   = ICcfg.front();
+  string filename    = ICcfg.back();
+  if(inputtype=="txtIC")
   {
-    cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
-    TFile* inICfile = new TFile(filename.c_str(),"READ");
-    TH2D* ICmap = (TH2D*) inICfile->Get(objkey.c_str());
-    this->LoadIC(ICmap);
-    inICfile->Close();
+    cout<<"> Loading IC from txt file "<<filename<<endl;
+    timedependent_ICvalues_.push_back( GetICFromtxt(filename) );
   }
   else
-  {
-    cout<<"> Loading IC from txt file "<<filename<<endl;    
-    ifstream intxtfile(filename.c_str());
-    this->LoadIC(intxtfile);
-    intxtfile.close();
-  }
+    if(inputtype=="txtICdictionary")
+    {
+      ifstream ICdictionary(filename.c_str());
+      UInt_t runmin, runmax;
+      UShort_t lsmin, lsmax;
+      string ICfilename;
+      while(!ICdictionary.eof())
+      {
+	ICdictionary  >> runmin >> lsmin >> runmax >> lsmax;
+	IOV thisIOV{runmin,lsmin,runmax,lsmax};
+	IOVlist_.push_back( thisIOV );
+	timedependent_ICvalues_.push_back( GetICFromtxt(ICfilename) );
+      }
+      ICdictionary.close();
+    }
+    else
+    {
+      string objkey(inputtype);
+      cout<<"> Loading IC from "<<filename<<"/"<<objkey<<endl;
+      TFile* inICfile = new TFile(filename.c_str(),"READ");
+      TH2D* ICmap = (TH2D*) inICfile->Get(objkey.c_str());
+      int iz=0;
+      if(objkey.find("EEm")!=std::string::npos || objkey.find("EEM")!=std::string::npos)
+	iz=-1;
+      else
+	if(objkey.find("EEp")!=std::string::npos || objkey.find("EEP")!=std::string::npos)
+	  iz=+1;
+      timedependent_ICvalues_.push_back( GetICFromTH2D(ICmap,iz) );
+      inICfile->Close();
+    }
 }
 
-void ICmanager::LoadIC(ifstream &infile)
+IC ICmanager::GetICFromtxt(const std::string &txtfilename)
 {
-  /////////////////////////////////////////////////////////////////////////
-  //temporary only for the barrel
-  Neta_=171;
-  ietamin_=-85;
-  ietamax_=85;
-  Nphi_=360;
-  iphimin_=1;
-  iphimax_=360;
-  /////////////////////////////////////////////////////////////////////////
-
-  xtal_ = new crystal[Neta_*Nphi_];
-  int iPhi, iEta, iz;
-  double ic, eic;
+  int ix, iy, iz;
+  double icvalue, eic;
+  IC icvalues;
+  ifstream infile(txtfilename.c_str());
   while (!infile.eof()) 
   {
-    infile >> iEta >> iPhi >> iz >> ic >> eic ;
-    //cout << iEta <<"\t"<< iPhi <<"\t"<< iz <<"\t"<< ic << eic <<endl ;
-    if(iz==0)
+    infile >> ix >> iy >> iz >> icvalue >> eic ;
+    //cout << ix <<"\t"<< iy <<"\t"<< iz <<"\t"<< ic << eic <<endl ;
+    icvalues[ix][iy][iz] = icvalue;
+  }
+  return icvalues;
+}
+
+IC ICmanager::GetICFromTH2D(TH2D* ICmap, const int &iz)
+{
+  IC icvalues;
+  bool toshift = (ICmap->GetXaxis()->GetXmin() == 1);
+  for(int xbin=1; xbin<ICmap->GetXaxis()->GetXmax()+1; ++xbin)
+  {
+    int ix = (int) (ICmap->GetXaxis()->GetBinCenter(xbin) - 0.5*toshift);
+    for(int ybin=1; ybin<ICmap->GetYaxis()->GetXmax()+1; ++ybin)
     {
-      int index = fromIetaIphito1Dindex(iEta,iPhi,Neta_,Nphi_,ietamin_,iphimin_);
-      //cout<<"setting ic of "<<index<<" to "<<ic<<endl;
-      xtal_[index].IC = ic;
-      xtal_[index].status = 1;
+      int iy = (int) (ICmap->GetYaxis()->GetBinCenter(ybin) - 0.5*toshift);
+      if(iz==0)//for barrel, for historical reason, in the th2f ix(ieta) and iy(iphi) are inverted 
+	icvalues[iy][ix][iz] = ICmap->GetBinContent(xbin,ybin);
+      else
+	icvalues[ix][iy][iz] = ICmap->GetBinContent(xbin,ybin);
     }
   }
+  return icvalues;
 }
-
-void ICmanager::CreateIC()
-{
-  Neta_=ietamax_-ietamin_+1;
-  Nphi_=iphimax_-iphimin_+1;
-  cout<<"> Initialize ICmanager with Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax_<<"] and Nphi="<<Nphi_<<" in ["<<iphimin_<<","<<iphimax_<<"]"<<endl;
-  xtal_ = new crystal[Neta_*Nphi_];
-  for(int xbin=1; xbin<Nphi_+1; ++xbin)
-    for(int ybin=1; ybin<Neta_+1; ++ybin)
-    {
-      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
-      xtal_[index].IC = 1;
-      xtal_[index].status = 1;
-    }
-}
-
 
 void ICmanager::InitIC(Int_t ICvalue)
 {
-  for(int xbin=1; xbin<Nphi_+1; ++xbin)
-    for(int ybin=1; ybin<Neta_+1; ++ybin)
-    {
-      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
-      xtal_[index].IC = ICvalue;
-    }
+  IC icvalues;
+  for(int iz=izmin_; iz<=izmax_; ++iz)
+    for(int ix=ixmin_.at(iz); ix<=ixmax_.at(iz); ++ix)
+      for(int iy=iymin_.at(iz); iy<=iymax_.at(iz); ++iy)
+	icvalues[ix][iy][iz]=1.;
+
+  timedependent_ICvalues_.push_back( icvalues );
 }
 
-
-Float_t  ICmanager::GetIC(const Int_t &index)
-{
-  return (xtal_[index]).IC;
-}
-
-Float_t ICmanager::GetIC(const Int_t &ieta, const Int_t &iphi)
+Float_t ICmanager::GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz)
 {
   //#ifdef DEBUG
-  assert(ieta>=ietamin_ && ieta<=ietamax_);
-  assert(iphi>=iphimin_ && iphi<=iphimax_);
+  assert(iz>=izmin_     && iz<=izmax_); 
+  assert(ix>=ixmin_.at(iz) && ix<=ixmax_.at(iz));
+  assert(iy>=iymin_.at(iz) && iy<=iymax_.at(iz));
   //#endif
-  return ( xtal_[ fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_) ] ).IC;
+  return timedependent_ICvalues_.at(0)[ix][iy][iz];
 }
 
-TH2D* ICmanager::GetHisto(const char* name, const char* title)
+Float_t ICmanager::GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz, const Int_t &iIOV)
 {
-  TH2D* ICmap = new TH2D(name,title,Nphi_,iphimin_,iphimax_+1,Neta_,ietamin_,ietamax_+1);
+  //#ifdef DEBUG
+  assert(iz>=izmin_     && iz<=izmax_); 
+  assert(ix>=ixmin_.at(iz) && ix<=ixmax_.at(iz));
+  assert(iy>=iymin_.at(iz) && iy<=iymax_.at(iz));
+  assert(iIOV<timedependent_ICvalues_.size());
+  //#endif
+  return timedependent_ICvalues_.at(iIOV)[ix][iy][iz];
+}
+
+int ICmanager::FindIOVNumber(const UInt_t &run, const UShort_t &ls)
+{
+  if(IOVlist_.size()==0)
+    return 0;
+  int iIOV=0;
+  for(int iIOV=0; iIOV<IOVlist_.size(); ++iIOV)
+    if(IOVlist_.at(iIOV).Contains(run,ls))
+      return iIOV;
+  cout<<"[ERROR]: can't find the given (run,ls) in the IOV list --> will use the first "<<endl;
+  return -1;
+}
+
+TH2D* ICmanager::GetHisto(const int &iz, const char* name, const char* title)
+{
+  TH2D* ICmap;
+  //if it is barrel, for historical reasons, I have to invert ix(ieta) and iy(iphi)
+  if(iz==0)
+    ICmap = new TH2D(name,title, Ny_.at(iz), iymin_.at(iz)-0.5, iymax_.at(iz)+0.5, Nx_.at(iz), ixmin_.at(iz)-0.5, ixmax_.at(iz)+0.5);
+  else
+    ICmap = new TH2D(name,title, Nx_.at(iz), ixmin_.at(iz)-0.5, ixmax_.at(iz)+0.5, Ny_.at(iz), iymin_.at(iz)-0.5, iymax_.at(iz)+0.5);
+
   ICmap->SetDirectory(0);
+
   for(int xbin=1; xbin<ICmap->GetNbinsX()+1; ++xbin)
     for(int ybin=1; ybin<ICmap->GetNbinsY()+1; ++ybin)
     {
-      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
-      ICmap->SetBinContent(xbin,ybin,this->GetIC(index));
+      int ix,iy;
+      if(iz==0)
+      {
+	ix=ICmap->GetYaxis()->GetBinCenter(ybin);
+	iy=ICmap->GetXaxis()->GetBinCenter(xbin);
+      }
+      else
+      {
+	ix=ICmap->GetXaxis()->GetBinCenter(xbin);
+	iy=ICmap->GetYaxis()->GetBinCenter(ybin);
+      }
+      ICmap->SetBinContent(xbin,ybin,this->GetIC(ix,iy,iz));
     }
   return ICmap;
 }
 
-double&  ICmanager::operator()(const Int_t &ieta, const Int_t &iphi)
+double&  ICmanager::operator()(const Int_t &ix, const Int_t &iy, const Int_t &iz)
 {
-  return (( xtal_[ fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_) ] ).IC);
+  return (timedependent_ICvalues_.at(0))[ix][iy][iz];
 }
 
-TH2D* ICmanager::GetPulledIC(TH2D* h2_ICpull)
+TH2D* ICmanager::GetPulledIC(TH2D* h2_ICpull, const int &iz)
 {
-  if(h2_ICpull->GetNbinsX() != Nphi_                 ||
-     h2_ICpull->GetNbinsY() != Neta_                 ||
-     h2_ICpull->GetXaxis()->GetXmin()   != iphimin_  ||
-     h2_ICpull->GetXaxis()->GetXmax()-1 != iphimax_  ||
-     h2_ICpull->GetYaxis()->GetXmin()   != ietamin_  ||
-     h2_ICpull->GetYaxis()->GetXmax()-1 != ietamax_  )
-  {
-    cout<<"[ERROR]: GetPulledIC: histogram not compatible"<<endl;
-    return NULL;
-  }
-  
+  bool toshift = (h2_ICpull->GetXaxis()->GetXmin()==1);
   TH2D* pulledIC = new TH2D
     ("pulledIC","pulledIC",
      h2_ICpull->GetNbinsX(),h2_ICpull->GetXaxis()->GetXmin(),h2_ICpull->GetXaxis()->GetXmax(),
@@ -201,25 +206,35 @@ TH2D* ICmanager::GetPulledIC(TH2D* h2_ICpull)
   for(int xbin=1; xbin<h2_ICpull->GetNbinsX()+1; ++xbin)
     for(int ybin=1; ybin<h2_ICpull->GetNbinsY()+1; ++ybin)
     {
+      int ix,iy;
+      if(iz==0)
+      {
+	ix=h2_ICpull->GetYaxis()->GetBinCenter(xbin) - 0.5*toshift;
+	iy=h2_ICpull->GetXaxis()->GetBinCenter(ybin) - 0.5*toshift;
+      }
+      else
+      {
+	ix=h2_ICpull->GetXaxis()->GetBinCenter(xbin) - 0.5*toshift;
+	iy=h2_ICpull->GetYaxis()->GetBinCenter(ybin) - 0.5*toshift;
+      }
       double pull = h2_ICpull->GetBinContent(xbin,ybin);
-      int index = fromTH2indexto1Dindex(xbin, ybin, Nphi_, Neta_);
-      double oldIC = this->GetIC(index);
+      double oldIC = this->GetIC(ix,iy,iz);
       pulledIC->SetBinContent(xbin,ybin,oldIC*pull);
     }
   return pulledIC;
 }
 
-TH2D* ICmanager::PullIC(TH2D* h2_ICpull)
+TH2D* ICmanager::PullIC(TH2D* h2_ICpull, const Int_t &iz)
 {
-  TH2D* pulledIC = this->GetPulledIC(h2_ICpull);
-  this->LoadIC(pulledIC);
+  TH2D* pulledIC = this->GetPulledIC(h2_ICpull, iz);
+  this->LoadIC(pulledIC, iz);
   return pulledIC;
 }
 
 void ICmanager::EtaringNormalizationEB()
 {
   cout<<"ICmanager::EtaringNormalizationEB still to be validated"<<endl;
-  TGraphErrors* avgIC_vs_iEta = this->GetAvgICvsEtaEB();
+  /*  TGraphErrors* avgIC_vs_iEta = this->GetAvgICvsEtaEB();
 
   for(int ieta = ietamin_; ieta <= ietamax_; ++ieta)
   {
@@ -232,14 +247,14 @@ void ICmanager::EtaringNormalizationEB()
       xtal_[index1D].IC /= avgIC;
     }
   }
-  delete avgIC_vs_iEta;
+  delete avgIC_vs_iEta;*/
 }
 
 void ICmanager::PrintSettings()
 {
   cout<<"----------------------------------------------------------------------------------"<<endl;
   cout<<"> ICmanager settings:"<<endl;
-  cout<<">>> Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax_<<"] and Nphi="<<Nphi_<<" in ["<<iphimin_<<","<<iphimax_<<"]"<<endl;
+  //cout<<">>> Neta="<<Neta_<<" in ["<<ietamin_<<","<<ietamax_<<"] and Nphi="<<Nphi_<<" in ["<<iphimin_<<","<<iphimax_<<"]"<<endl;
   cout<<"----------------------------------------------------------------------------------"<<endl;
 }
 
@@ -247,7 +262,7 @@ void ICmanager::PrintSettings()
 TH1D* ICmanager::GetICspread( int nBins_spread, float spreadMin, float spreadMax)
 {
   cout<<"ICmanager::GetICspread still to be validated"<<endl;
-  TH1D* h_ICspread = new TH1D("ICspread","ICspread",nBins_spread,spreadMin,spreadMax);
+  /*  TH1D* h_ICspread = new TH1D("ICspread","ICspread",nBins_spread,spreadMin,spreadMax);
   for(int ieta = ietamin_; ieta <= ietamax_; ++ieta)
   {
     for(int iphi = iphimin_; iphi <= iphimax_ ; ++iphi)
@@ -256,13 +271,14 @@ TH1D* ICmanager::GetICspread( int nBins_spread, float spreadMin, float spreadMax
       h_ICspread->Fill(xtal_[index1D].IC);
     }
   }
-  return h_ICspread;
+  return h_ICspread;*/
+  return 0;
 }
 
 TGraphErrors* ICmanager::GetICspreadvsEtaEB(int nBins_spread, float spreadMin, float spreadMax)
 {
   cout<<"ICmanager::GetICspreadvsEtaEB still to be validated"<<endl;
-  TGraphErrors* g_ICspread_vs_iEta = new TGraphErrors();
+  /*  TGraphErrors* g_ICspread_vs_iEta = new TGraphErrors();
   g_ICspread_vs_iEta->SetName("ICspread_vs_iEta");
   g_ICspread_vs_iEta->SetTitle("ICspread_vs_iEta");
   map<int,TH1F*> h_ICspread_vs_iEta;
@@ -296,14 +312,15 @@ TGraphErrors* ICmanager::GetICspreadvsEtaEB(int nBins_spread, float spreadMin, f
     if(h.second)
       delete h.second;
 
-  return g_ICspread_vs_iEta;
+      return g_ICspread_vs_iEta;*/
+  return 0;
 
 }
 
 TGraphErrors* ICmanager::GetAvgICvsEtaEB()
 {
   cout<<"ICmanager::GetAvgICvsEtaEB still to be validated"<<endl;
-  TGraphErrors* avgIC_vs_iEta = new TGraphErrors();
+  /*  TGraphErrors* avgIC_vs_iEta = new TGraphErrors();
   avgIC_vs_iEta->SetName("avgIC_vs_iEta");
   avgIC_vs_iEta->SetTitle("avgIC_vs_iEta");
   
@@ -328,7 +345,8 @@ TGraphErrors* ICmanager::GetAvgICvsEtaEB()
     }
   }
 
-  return avgIC_vs_iEta;
+  return avgIC_vs_iEta;*/
+  return 0;
 }
 
 
@@ -336,7 +354,7 @@ TGraphErrors* ICmanager::GetICspreadvsPhiEB(int nBins_spread, float spreadMin, f
 {
 
   cout<<"ICmanager::GetICspreadvsPhiEB still to be validated"<<endl;
-  TGraphErrors* g_ICspread_vs_iphi = new TGraphErrors();
+  /*TGraphErrors* g_ICspread_vs_iphi = new TGraphErrors();
   g_ICspread_vs_iphi->SetName("ICspread_vs_iphi");
   g_ICspread_vs_iphi->SetTitle("ICspread_vs_iphi");
   map<int,TH1F*> h_ICspread_vs_iphi;
@@ -370,12 +388,14 @@ TGraphErrors* ICmanager::GetICspreadvsPhiEB(int nBins_spread, float spreadMin, f
       delete h.second;
 
   return g_ICspread_vs_iphi;
+  */
+  return 0;
 }
 
 TGraphErrors* ICmanager::GetAvgICvsPhiEB()
 {
   cout<<"ICmanager::GetAvgICvsPhiEB still to be validated"<<endl;
-  TGraphErrors* avgIC_vs_iPhi = new TGraphErrors();
+  /*  TGraphErrors* avgIC_vs_iPhi = new TGraphErrors();
   avgIC_vs_iPhi->SetName("avgIC_vs_iPhi");
   avgIC_vs_iPhi->SetTitle("avgIC_vs_iPhi");
   
@@ -400,13 +420,14 @@ TGraphErrors* ICmanager::GetAvgICvsPhiEB()
     }
   }
 
-  return avgIC_vs_iPhi;
+  return avgIC_vs_iPhi;*/
+  return 0;
 }
 
 TGraphErrors* ICmanager::GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPeriod )
 {
   cout<<"ICmanager::GetPhiFoldProfileEB still to be validated"<<endl;
-  //checks on the inputs
+  /*  //checks on the inputs
   if(ietamin<ietamin_)
   {
     cout<<"[ERROR]: provided ietamin is lower than "<<ietamin_<<endl;
@@ -451,12 +472,13 @@ TGraphErrors* ICmanager::GetPhiFoldProfileEB(int ietamin, int ietamax, int PhiPe
     if(h.second)
       delete h.second;
   
-  return g_avgIC_vsPhiFold;
+      return g_avgIC_vsPhiFold;*/
+  return 0;
 }
 
 void ICmanager::SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeriod)
 {
-  TGraphErrors* g_avgIC_vsPhiFold = this->GetPhiFoldProfileEB(ietamin,ietamax,PhiPeriod);
+  /*  TGraphErrors* g_avgIC_vsPhiFold = this->GetPhiFoldProfileEB(ietamin,ietamax,PhiPeriod);
   //i don't want to bias the avg IC value
   double foldedICmean = TMath::Mean(g_avgIC_vsPhiFold->GetN(), g_avgIC_vsPhiFold->GetY(), NULL);
 
@@ -472,11 +494,12 @@ void ICmanager::SupermoduleGapCorrectionEB(int ietamin, int ietamax, int PhiPeri
   }
   
   delete g_avgIC_vsPhiFold;
+  */
 }
 
 TH2D* ICmanager::GetStatPrec(ICmanager* IC2)
 {
-  //safety controls
+  /*  //safety controls
   if(Neta_!=IC2->Neta_ || Nphi_!=IC2->Nphi_ || ietamin_!=IC2->ietamin_ || ietamax_!=IC2->ietamax_ || iphimin_!=IC2->iphimin_ || iphimax_!=IC2->iphimax_)
   {
     cout<<"[ERROR]::GetStatPrec incompatible ICs"<<endl;
@@ -497,7 +520,8 @@ TH2D* ICmanager::GetStatPrec(ICmanager* IC2)
     }
 
   return StatPrec;
-
+  */
+  return 0;
 }
 /*
 TGraphErrors* ICmanager::GetStatPrecvsEtaringEB(ICmanager* IC2)

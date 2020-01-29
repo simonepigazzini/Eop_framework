@@ -90,14 +90,6 @@ int main(int argc, char* argv[])
   if(ICcfg.size()>0)
     calorimeter->LoadIC(ICcfg);
 
-  //eta, phi boundaries are taken by the calibrator constructor from configfile 
-  float ietamin, ietamax, iphimin, iphimax;
-  int Neta, Nphi;
-  calorimeter->GetEtaboundaries(ietamin, ietamax);
-  calorimeter->GetPhiboundaries(iphimin, iphimax);
-  Neta=calorimeter->GetNeta();
-  Nphi=calorimeter->GetNphi();
-
   //define the output 
   if(outfilename == "")
     if(config.OptExist("Output.ComputeIC_output"))
@@ -106,8 +98,8 @@ int main(int argc, char* argv[])
       outfilename = "IC.root";
 
   TFile *outFile = new TFile(outfilename.c_str(),"RECREATE");
-  ICmanager numerator(ietamin,ietamax,iphimin,iphimax);
-  ICmanager denominator(ietamin,ietamax,iphimin,iphimax);
+  ICmanager numerator;
+  ICmanager denominator;
 
   //Initialize numerator and denominator
   numerator.InitIC(0.);
@@ -179,57 +171,48 @@ int main(int argc, char* argv[])
 	  ix=XRecHit->at(iRecHit);
 	  iy=YRecHit->at(iRecHit);
 	  iz=ZRecHit->at(iRecHit);
-	  if(!EE)
-	  {
-	    //barrel
-	    if(iz!=0)//skip endcap rechits in barrel superclusters (ieta~1.5)
-	      continue;
-	    IC=calorimeter->GetIC(ix,iy);
-	    numerator(ix,iy)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	    denominator(ix,iy) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
-	  }
-	  else
-	  {
-	    //endcap
-	    if(iz==0)//skip barrel rechits in endcap superclusters (ieta~1.5)
-	      continue;
-	    //for the endcap i have to write the ICs with what i call ix,iy inverted 
-	    //once they are written in the inverted order i can read them in the correct order
-	    //the following trick works because the endcaps are squared (Neta=Nphi)
-	    //otherwise GetIC and () methods would give you troubles 
-	    IC=calorimeter->GetIC(iy,ix);
-	    numerator(iy,ix)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
-	    denominator(iy,ix) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
-	    //cout<<"main\tiRECHIT="<<iRecHit<<"\tix="<<ix<<"\tiy="<<iy<<"\tiz="<<iz<<"\tIC="<<IC<<endl;
-	    //getchar();
-	  }
+	  IC=calorimeter->GetIC(ix,iy,iz);
+	  numerator(ix,iy,iz)   += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E * p / E * weight;
+	  denominator(ix,iy,iz) += ERecHit->at(iRecHit) * fracRecHit->at(iRecHit) * regression * IC / E         * weight;
 	}
       }
     }
   }	  
 
   //get numerator and denominator histos
-  TH2D* h2_numerator = numerator.GetHisto("numerator","numerator");
-  TH2D* h2_denominator = denominator.GetHisto("denominator","denominator");
+  TH2D* h2_numeratorEB = numerator.GetHisto(       0, "numeratorEB",    "numeratorEB");
+  TH2D* h2_denominatorEB = denominator.GetHisto(   0, "denominatorEB",  "denominatorEB");
+  TH2D* h2_numeratorEEm = numerator.GetHisto(     -1, "numeratorEEm",   "numeratorEEm");
+  TH2D* h2_denominatorEEm = denominator.GetHisto( -1, "denominatorEEm", "denominatorEEm");
+  TH2D* h2_numeratorEEp = numerator.GetHisto(     +1, "numeratorEEp",   "numeratorEEp");
+  TH2D* h2_denominatorEEp = denominator.GetHisto( +1, "denominatorEEp", "denominatorEEp");
 
   //compute temporary IC-pull and IC-values 
-  TH2D* h2_ICpull = GetICpull(h2_numerator,h2_denominator);
-  TH2D* h2_temporaryIC = calorimeter->GetPulledIC(h2_ICpull);
+  TH2D* h2_ICpullEB = GetICpull(h2_numeratorEB,h2_denominatorEB);
+  TH2D* h2_temporaryICEB = calorimeter->GetPulledIC(h2_ICpullEB, 0);
+  TH2D* h2_ICpullEEm = GetICpull(h2_numeratorEEm,h2_denominatorEEm);
+  TH2D* h2_temporaryICEEm = calorimeter->GetPulledIC(h2_ICpullEEm, -1);
+  TH2D* h2_ICpullEEp = GetICpull(h2_numeratorEEp,h2_denominatorEEp);
+  TH2D* h2_temporaryICEEp = calorimeter->GetPulledIC(h2_ICpullEEp, +1);
 
-  h2_temporaryIC->SetName("temporaryIC");
-  h2_temporaryIC->SetTitle("temporaryIC");
+  h2_temporaryICEB->SetName("temporaryICEB");
+  h2_temporaryICEB->SetTitle("temporaryICEB");
+  h2_temporaryICEEm->SetName("temporaryICEEm");
+  h2_temporaryICEEm->SetTitle("temporaryICEEm");
+  h2_temporaryICEEp->SetName("temporaryICEEp");
+  h2_temporaryICEEp->SetTitle("temporaryICEEp");
 
   //save and close
   //if something goes wrong with I/O (usually eos problems) returns failure 
   if(!outFile->cd())
     return -1;
-  if(h2_numerator->Write()<=0)
+  if(h2_numeratorEB->Write()<=0 || h2_numeratorEEm->Write()<=0 || h2_numeratorEEp->Write()<=0)
     return -1;
-  if(h2_denominator->Write()<=0)
+  if(h2_denominatorEB->Write()<=0 || h2_denominatorEEm->Write()<=0 || h2_denominatorEEp->Write()<=0)
     return -1;
-  if(h2_ICpull->Write()<=0)
+  if(h2_ICpullEB->Write()<=0 || h2_ICpullEEm->Write()<=0 || h2_ICpullEEp->Write()<=0)
     return -1;
-  if(h2_temporaryIC->Write()<=0)
+  if(h2_temporaryICEB->Write()<=0 || h2_temporaryICEEm->Write()<=0 || h2_temporaryICEEp->Write()<=0)
     return -1;
 
   outFile->Close();

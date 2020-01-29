@@ -198,7 +198,7 @@ Float_t calibrator::GetICEnergyEE(const Int_t &i)
     kRegression=energySCEle_[i]/(rawEnergySCEle_[i]+EScorrection_*esEnergySCEle_[i]);
   float E=0;
   float IC = 1.;
-  int ix,iy;
+  int ix,iy,iz,iIOV;
 
   for(unsigned int iRecHit = 0; iRecHit < ERecHit_[i]->size(); iRecHit++) 
   {
@@ -206,17 +206,9 @@ Float_t calibrator::GetICEnergyEE(const Int_t &i)
 	continue;
     ix = XRecHit_[i]->at(iRecHit);
     iy = YRecHit_[i]->at(iRecHit);
-#ifdef DEBUG
-    if(ix>=Neta_) cout<<"ieta>=Neta"<<endl;
-    if(iy>=Nphi_) cout<<"iphi>=Nphi"<<endl;
-    if(ix<0)     cout<<"ieta<0"<<endl;
-    if(iy<0)     cout<<"iphi<0"<<endl;
-#endif
-    if(ZRecHit_[i]->at(iRecHit)==0)
-      IC=1.;
-    else
-      //the function fromIetaIphito1Dindex is tuned for EB --> ix and iy must be inverted
-      IC = (xtal_[fromIetaIphito1Dindex(iy,ix,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
+    iz = ZRecHit_[i]->at(iRecHit);
+    iIOV = FindIOVNumber( GetRunNumber() , GetLS() );
+    IC = GetIC(ix,iy,iz,iIOV);
     E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
     //cout<<"GetICEnergy\tiRECHIT="<<iRecHit<<"\tix="<<XRecHit_[i]->at(iRecHit)<<"\tiy="<<YRecHit_[i]->at(iRecHit)<<"\tiz="<<ZRecHit_[i]->at(iRecHit)<<"\tIC="<<IC<<endl;
   }
@@ -255,24 +247,17 @@ Float_t calibrator::GetICEnergyEB(const Int_t &i)
     kRegression=energySCEle_[i]/rawEnergySCEle_[i];
   float E=0;
   float IC = 1.;
-  int ieta,iphi;
+  int ix,iy,iz,iIOV;
 
   for(unsigned int iRecHit = 0; iRecHit < ERecHit_[i]->size(); iRecHit++) 
   {
     if(recoFlagRecHit_[i]->at(iRecHit) >= 4)
 	continue;
-    ieta = XRecHit_[i]->at(iRecHit);
-    iphi = YRecHit_[i]->at(iRecHit);
-#ifdef DEBUG
-    if(ieta>=Neta_) cout<<"ieta>=Neta"<<endl;
-    if(iphi>=Nphi_) cout<<"iphi>=Nphi"<<endl;
-    if(ieta<0)      cout<<"ieta<0"<<endl;
-    if(iphi<0)      cout<<"iphi<0"<<endl;
-#endif
-    if(ZRecHit_[i]->at(iRecHit)!=0)
-      IC=1.;
-    else
-      IC = (xtal_[fromIetaIphito1Dindex(ieta,iphi,Neta_,Nphi_,ietamin_,iphimin_)]).IC;
+    ix = XRecHit_[i]->at(iRecHit);
+    iy = YRecHit_[i]->at(iRecHit);
+    iz = ZRecHit_[i]->at(iRecHit);
+    iIOV = FindIOVNumber( GetRunNumber() , GetLS() );
+    IC = GetIC(ix,iy,iz,iIOV);
     E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
   }
       
