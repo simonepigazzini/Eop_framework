@@ -34,6 +34,7 @@ class MonitoringManager: public calibrator
   void  SaveTimeBins(std::string outfilename, std::string writemethod="RECREATE");
   void  LoadTimeBins(std::string option="");
   void  FillTimeBins();
+  void  fitScale();
   std::vector<TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls);
   std::vector<TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls, const UInt_t &time );
 

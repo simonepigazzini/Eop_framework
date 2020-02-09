@@ -1,5 +1,6 @@
 #include "MonitoringManager.h"
 #include "histoFunc.h"
+#include "FitUtils.h"
 
 using namespace std;
 
@@ -66,6 +67,82 @@ TH1F* MonitoringManager::BuildTemplate()
   h_template_->SetTitle(("h_template_"+label_).c_str());
   //curr_dir->cd();
   return h_template_;
+}
+
+void  MonitoringManager::fitScale()
+{
+  //Parse the cfg
+  string xname = conf_.GetOpt<string>    ("LaserMonitoring.scaleFit.xname");
+  string yname = conf_.GetOpt<string>    ("LaserMonitoring.scaleFit.yname");
+  string yuncname = conf_.GetOpt<string> ("LaserMonitoring.scaleFit.yuncname");
+  string func = conf_.GetOpt<string>      ("LaserMonitoring.scaleFit.func");
+  string label = conf_.GetOpt<string>      ("LaserMonitoring.scaleFit.label");
+  string fitopt  = "QRL+";
+  int Ntrialfit  = 10;
+  string TemplatePlotsFolder="";
+  if(conf_.OptExist("LaserMonitoring.scaleFit.fitoptions"))
+     fitopt = conf_.GetOpt<string> ("LaserMonitoring.scaleFit.fitoptions");
+  if(conf_.OptExist("LaserMonitoring.scaleFit.Ntrialfit"))
+    Ntrialfit = conf_.GetOpt<int> ("LaserMonitoring.scaleFit.Ntrialfit");
+  if(conf_.OptExist("LaserMonitoring.scaleFit.fitplots_folder"))
+    TemplatePlotsFolder=conf_.GetOpt<string> ("LaserMonitoring.scaleFit.fitplots_folder");
+
+  //Build the TGraph
+  TGraphErrors* g_scale_vs_x = new TGraphErrors();
+  g_scale_vs_x->SetName(label.c_str());
+  g_scale_vs_x->SetTitle(label.c_str());
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  {
+    double x=-999;
+    double ex=0.;
+    if(xname=="time")
+    {
+      x = it_bin -> GetTime();
+      ex = (it_bin->GetTimemax()-it_bin->GetTimemin())/sqrt(12.);
+    }
+
+    double y = it_bin->GetVariable(yname);
+    if (y>2. || y<0.) continue;
+    double ey=0.;
+    if(yuncname!="")
+      ey = it_bin->GetVariable(yuncname);
+
+    g_scale_vs_x -> SetPoint( g_scale_vs_x->GetN(), x, it_bin->GetVariable(yname));
+    g_scale_vs_x -> SetPointError( g_scale_vs_x->GetN()-1, ex, ey);
+  }
+
+  //Build the fit function
+  float xmin_fit=0;
+  if(conf_.OptExist("LaserMonitoring.scaleFit.xmin_fit"))
+    xmin_fit = conf_.GetOpt<float>   ("LaserMonitoring.scaleFit.xmin_fit");
+  else
+    if(xname=="time")
+      xmin_fit = timebins.begin()->GetTimemin()-1; 
+  float xmax_fit=0;
+  if(conf_.OptExist("LaserMonitoring.scaleFit.xmax_fit"))
+    xmax_fit = conf_.GetOpt<float>   ("LaserMonitoring.scaleFit.xmax_fit");
+  else
+    if(xname=="time")
+      xmax_fit = timebins.begin()->GetTimemax()-1; 
+  TF1* fitfunc = new TF1(Form("fitfunc_%s",label.c_str()), func.c_str(), xmin_fit, xmax_fit);
+  
+  //Fit the graph
+  bool isgoodfit = FitUtils::PerseverantFit(g_scale_vs_x, fitfunc, fitopt, Ntrialfit, TemplatePlotsFolder);
+
+  //Add the resulting parameters to the timebin
+  for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+  {
+    //cout<<"reading bin "<<it_bin-timebins.begin()<<endl;
+    for( int iPar=0; iPar<fitfunc->GetNpar(); ++iPar)
+    {
+      it_bin->SetVariable(Form("scale_fit_%s_par%i",label.c_str(),iPar), fitfunc->GetParameter(iPar));
+      it_bin->SetVariable(Form("scale_unc_fit_%s_par%i",label.c_str(),iPar), fitfunc->GetParError(iPar));
+    }
+  }
+
+  delete fitfunc;
+  delete g_scale_vs_x;
+  
 }
 
 void  MonitoringManager::RunDivide()
@@ -411,12 +488,12 @@ void  MonitoringManager::RunTemplateFit(string scale)
     if(isgoodfit && fitscale!=0)
     {
       it_bin->SetVariable("scale_"+scale,    1./fitscale);
-      it_bin->SetVariable("scaleunc_"+scale, fitfunc->GetParError(1) / fitscale / fitscale);
+      it_bin->SetVariable("scale_unc_"+scale, fitfunc->GetParError(1) / fitscale / fitscale);
     }
     else
     {
       it_bin->SetVariable("scale_"+scale,    -999);
-      it_bin->SetVariable("scaleunc_"+scale, 0);
+      it_bin->SetVariable("scale_unc_"+scale, 0);
     }
     //cout<<"postfit fitfunc integral = "<<fitfunc->Integral(xmin_fit,xmax_fit)<<endl;
   }
@@ -436,12 +513,12 @@ void  MonitoringManager::RunComputeMean(string scale)
     {
       cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
       it_bin->SetVariable("scale_"+scale, -999.);
-      it_bin->SetVariable("scaleunc_"+scale, 0.);
+      it_bin->SetVariable("scale_unc_"+scale, 0.);
     }
     else
     {
       it_bin->SetVariable("scale_"+scale, it_bin->GetMean());
-      it_bin->SetVariable("scaleunc_"+scale, it_bin->GetMeanError());
+      it_bin->SetVariable("scale_unc_"+scale, it_bin->GetMeanError());
     }
   }
 }
@@ -457,12 +534,12 @@ void  MonitoringManager::RunComputeMedian(string scale)
     {
       cout<<"[ERROR]: bin "<<it_bin-timebins.begin()<<" is empty"<<endl;
       it_bin->SetVariable("scale_"+scale, -999.);
-      it_bin->SetVariable("scaleunc_"+scale, 0.);
+      it_bin->SetVariable("scale_unc_"+scale, 0.);
     }
     else
     {
       it_bin->SetVariable("scale_"+scale, it_bin->GetMedian());
-      it_bin->SetVariable("scaleunc_"+scale, it_bin->GetMeanError());
+      it_bin->SetVariable("scale_unc_"+scale, it_bin->GetMeanError());
     }
   }
 }
