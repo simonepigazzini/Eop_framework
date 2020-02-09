@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
   bool   buildTemplate = false;
   bool   runDivide     = false;
   bool   scaleMonitor  = false;
+  bool   scaleFit      = false;
   bool   saveHistos    = false;
   
   //Parse the input options
@@ -39,6 +40,8 @@ int main(int argc, char* argv[])
       runDivide=true;
     if(string(argv[iarg])=="--scaleMonitor")
       scaleMonitor=true;
+    if(string(argv[iarg])=="--scaleFit")
+      scaleFit=true;
     if(string(argv[iarg])=="--saveHistos")
       saveHistos=true;
   }
@@ -102,15 +105,26 @@ int main(int argc, char* argv[])
 	    cout<<"[ERROR]: unknown monitoring method \""<<method<<"\""<<endl;
 	    return -1;
 	  }
+      //save the output
+      string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
+      cout<<">> Saving timebins to "<<outputfilename<<endl;
+      monitor.SaveTimeBins(outputfilename);
+
     }
     cout<<"loaded+produced scales are:"<<endl;
     monitor.PrintScales();
 
+    if(scaleFit)
+    {
+      monitor.LoadTimeBins();
+      monitor.fitScale();
+      //save the output
+      string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleFit.output");
+      cout<<">> Saving timebins to "<<outputfilename<<endl;
+      monitor.SaveTimeBins(outputfilename);      
+    }
     
-    //save the output
-    string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
-    cout<<">> Saving timebins to "<<outputfilename<<endl;
-    monitor.SaveTimeBins(outputfilename);
+    
 
     //string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
     //TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());

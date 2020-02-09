@@ -50,6 +50,12 @@ class TimeBin
   double   GetMedian();
   double   GetIntegral(const float &xmin, const float &xmax);
   double   GetBinWidth(const int &ibin);
+  UInt_t   GetTimemin() {return timemin_;}
+  UInt_t   GetTimemax() {return timemax_;}
+  UInt_t   GetTime()    {return 0.5*(timemax_+timemin_);}
+  //UInt_t   GetLumimin() {return lumimin_;}
+  //UInt_t   GetLumimax() {return lumimax_;}
+  //UInt_t   GetLumi()    {return 0.5*(lumimax_+lumimin_};}
   //void   SaveAs(std::string outputfilename);  
   void     SetVariable(const std::string &variablename, const float &variablevalue);
   float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
