@@ -80,9 +80,11 @@ ECALELFInterface::ECALELFInterface(CfgManager conf):
 	cerr<<"[WARNING]: unknown tree "<<treename<<endl;
   }
 
+  auto Nentries = ch_[treelist.at(0)]->GetEntries(); 
   for(unsigned int nchain = 1; nchain < treelist.size(); ++nchain)
   {
     cout << ">>> Adding chain " << treelist.at(nchain) << " as friend to chain " << treelist.at(0) << endl;
+    assert(Nentries == ch_[treelist.at(nchain)]->GetEntries());
     ch_[treelist.at(0)]->AddFriend(treelist.at(nchain).c_str(),"");
   }
   chain_=ch_[treelist.at(0)];

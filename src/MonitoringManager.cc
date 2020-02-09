@@ -254,7 +254,9 @@ void  MonitoringManager::FillTimeBins()
     {
       if(this->isSelected(iEle))
       {
-	//cout<<"selected - "<<"run="<<this->GetRunNumber()<<"\tLS="<<this->GetLS()<<"\tT="<<this->GetTime()<<endl;
+	int iIOV = FindIOVNumber(GetRunNumber(),GetLS());
+	//printf("iIOV=%i\tE=%.1f\tICEnergy=%.1f\tp=%.1f\tE/p=%.1f\tscale=%.1f",iIOV,GetEnergy(iEle),GetICEnergy(iEle),GetP(iEle),GetICEnergy(iEle)/GetP(iEle),GetScaleVariableValue(iEle));
+	//getchar();
 	auto bin_iterator = FindBin(this->GetRunNumber(),this->GetLS(),this->GetTime());
 	if(bin_iterator!=timebins.end())
 	  bin_iterator->FillHisto( GetScaleVariableValue(iEle) );

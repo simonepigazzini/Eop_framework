@@ -258,6 +258,7 @@ Float_t calibrator::GetICEnergyEB(const Int_t &i)
     iz = ZRecHit_[i]->at(iRecHit);
     iIOV = FindIOVNumber( GetRunNumber() , GetLS() );
     IC = GetIC(ix,iy,iz,iIOV);
+    //printf("(ix,iy,iz,iIOV)=(%i,%i,%i,%i)\t (run,lumi)=(%u,%u)\t IC=%f\n",ix,iy,iz,iIOV,GetRunNumber(),GetLS(),IC);
     E += kRegression * ERecHit_[i]->at(iRecHit) * fracRecHit_[i]->at(iRecHit) * IC;
   }
       

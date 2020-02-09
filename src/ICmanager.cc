@@ -57,8 +57,10 @@ void ICmanager::LoadIC(const std::vector<std::string> &ICcfg)
       string ICfilename;
       while(!ICdictionary.eof())
       {
-	ICdictionary  >> runmin >> lsmin >> runmax >> lsmax;
+	if(!(ICdictionary  >> runmin >> lsmin >> runmax >> lsmax >> ICfilename))
+	  continue;
 	IOV thisIOV{runmin,lsmin,runmax,lsmax};
+	cout<<"> Loading IC for IOV "<<runmin<<":"<<lsmin<<" - "<<runmax<<":"<<lsmax<<" from txt file "<<ICfilename<<endl;
 	IOVlist_.push_back( thisIOV );
 	timedependent_ICvalues_.push_back( GetICFromtxt(ICfilename) );
       }
@@ -90,7 +92,7 @@ IC ICmanager::GetICFromtxt(const std::string &txtfilename)
   while (!infile.eof()) 
   {
     infile >> ix >> iy >> iz >> icvalue >> eic ;
-    //cout << ix <<"\t"<< iy <<"\t"<< iz <<"\t"<< ic << eic <<endl ;
+    //cout << ix <<"\t"<< iy <<"\t"<< iz <<"\t"<< icvalue << "\t"<< eic <<endl ;
     icvalues[ix][iy][iz] = icvalue;
   }
   return icvalues;
