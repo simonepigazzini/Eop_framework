@@ -37,6 +37,23 @@ struct IOV
  
     return true;
   }
+  bool GreaterThan(const UInt_t &run, const UShort_t &ls) const
+  {
+    if(run > runmin)
+      return false;
+    if(run==runmin && ls > lsmin)
+      return false;
+    return true;
+  }
+  bool SmallerThan(const UInt_t &run, const UShort_t &ls) const
+  {
+    if(run < runmax)
+      return false;
+    if(run==runmax && ls < lsmax)
+      return false;
+    return true;
+  }
+    
 };
 
 class ICmanager
@@ -53,6 +70,7 @@ class ICmanager
   Float_t  GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz);
   Float_t  GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz, const Int_t &iIOV);
   int      FindIOVNumber(const UInt_t &run, const UShort_t &ls);
+  int      FindCloserIOVNumber(const UInt_t &run, const UShort_t &ls);
   void     GetXboundaries(const Int_t &iz, Float_t &ixmin, Float_t &ixmax) {ixmin=ixmin_.at(iz); ixmax=ixmax_.at(iz);}
   void     GetYboundaries(const Int_t &iz, Float_t &iymin, Float_t &iymax) {iymin=iymin_.at(iz); iymax=iymax_.at(iz);}
   Int_t    GetNx(const Int_t &iz) {return Nx_.at(iz);}

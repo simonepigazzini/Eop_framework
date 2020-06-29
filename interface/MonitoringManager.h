@@ -32,7 +32,8 @@ class MonitoringManager: public calibrator
   TH1F* BuildTemplate();
   void  RunDivide();
   void  SaveTimeBins(std::string outfilename, std::string writemethod="RECREATE");
-  void  LoadTimeBins(std::string option="");
+  void  LoadTimeBins(string inputfilename, string objname="", std::string option="");
+  void  LoadIntegratedLuminosity(string intlumi_vs_time_filename);
   void  FillTimeBins();
   void  fitScale();
   std::vector<TimeBin>::iterator FindBin(const UInt_t &run, const UShort_t &ls);
@@ -48,7 +49,7 @@ class MonitoringManager: public calibrator
   float GetScaleVariableValue(const int &iEle);
   
  protected:
-  enum kvariabletype {kregular, kICenergy_over_p};
+  enum kvariabletype {kregular, kICenergy_over_p,kICMee};
   int variabletype_;
   std::vector<TimeBin>::iterator last_accessed_bin_;
   std::vector<TimeBin> timebins;

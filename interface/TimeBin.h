@@ -53,11 +53,13 @@ class TimeBin
   UInt_t   GetTimemin() {return timemin_;}
   UInt_t   GetTimemax() {return timemax_;}
   UInt_t   GetTime()    {return 0.5*(timemax_+timemin_);}
-  //UInt_t   GetLumimin() {return lumimin_;}
-  //UInt_t   GetLumimax() {return lumimax_;}
-  //UInt_t   GetLumi()    {return 0.5*(lumimax_+lumimin_};}
+  UInt_t   GetIntlumimin() {return intlumimin_;}
+  UInt_t   GetIntlumimax() {return intlumimax_;}
+  UInt_t   GetIntlumi()    {return 0.5*(intlumimax_+intlumimin_);}
   //void   SaveAs(std::string outputfilename);  
   void     SetVariable(const std::string &variablename, const float &variablevalue);
+  void     SetIntlumimin(const double &intlumi) {intlumimin_ = intlumi;}
+  void     SetIntlumimax(const double &intlumi) {intlumimax_ = intlumi;}
   float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
   void     PrintVariables();  
   void     UpdateNev();
@@ -68,6 +70,8 @@ class TimeBin
   UShort_t lsmax_;
   UInt_t timemin_;
   UInt_t timemax_;
+  double intlumimin_;
+  double intlumimax_;
   int Nev_;
   TH1F* h_scale_;
   std::map<std::string,float> variablelist_;

@@ -17,7 +17,7 @@ using namespace std;
 
 void PrintUsage()
 {
-  cout<<"Usage: LaserMonitoring.exe --cfg <cfg_filename> [--buildTemplate] [--runDivide] [--scaleMonitor] [--saveHistos]"<<endl;
+  cout<<"Usage: LaserMonitoring.exe --cfg <cfg_filename> [--buildTemplate] [--runDivide] [--scaleMonitor] [--saveHistos] [--scaleFit]"<<endl;
 }
   
 int main(int argc, char* argv[])
@@ -81,7 +81,18 @@ int main(int argc, char* argv[])
 
   if(scaleMonitor)
   {
-    monitor.LoadTimeBins();
+
+    vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
+    string inputfilename="";
+    string objname="";
+    if(inputconf.size()==1)
+      inputfilename = inputconf.at(0);
+    else
+    {
+      objname = inputconf.at(0);
+      inputfilename = inputconf.at(1);
+    }
+    monitor.LoadTimeBins(inputfilename,objname);
 
     //fill the histos (one histo per time bin) 
     monitor.FillTimeBins();
@@ -113,19 +124,6 @@ int main(int argc, char* argv[])
     }
     cout<<"loaded+produced scales are:"<<endl;
     monitor.PrintScales();
-
-    if(scaleFit)
-    {
-      monitor.LoadTimeBins();
-      monitor.fitScale();
-      //save the output
-      string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleFit.output");
-      cout<<">> Saving timebins to "<<outputfilename<<endl;
-      monitor.SaveTimeBins(outputfilename);      
-    }
-    
-    
-
     //string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
     //TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
     //monitor.SaveScales(outfile);
@@ -134,6 +132,29 @@ int main(int argc, char* argv[])
     //outfile->Close();
     
   }//end scaleMonitor
+
+  if(scaleFit)
+  {
+    vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleFit.inputfilename");
+    string inputfilename="";
+    string objname="";
+    if(inputconf.size()==1)
+      inputfilename = inputconf.at(0);
+    else
+    {
+      objname = inputconf.at(0);
+      inputfilename = inputconf.at(1);
+    }
+    monitor.LoadTimeBins(inputfilename,objname);
+    monitor.fitScale();
+    //save the output
+    string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleFit.output");
+    cout<<">> Saving timebins to "<<outputfilename<<endl;
+    monitor.SaveTimeBins(outputfilename);      
+  }
+    
+    
+
   
   return 0;
   

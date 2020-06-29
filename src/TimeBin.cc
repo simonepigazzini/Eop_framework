@@ -11,6 +11,8 @@ TimeBin::TimeBin():
   lsmax_(0),
   timemin_(0),
   timemax_(0),
+  intlumimin_(0),
+  intlumimax_(0),
   Nev_(0),
   h_scale_(0)
   {}
@@ -22,6 +24,8 @@ TimeBin::TimeBin(const TimeBin &bincopy):
   lsmax_        (bincopy.lsmax_),
   timemin_      (bincopy.timemin_),
   timemax_      (bincopy.timemax_),
+  intlumimin_   (bincopy.intlumimin_),
+  intlumimax_   (bincopy.intlumimax_),
   Nev_          (bincopy.Nev_)
   {
     for (auto variableindex : bincopy.variablelist_)
@@ -73,24 +77,28 @@ void TimeBin::AddEvent(const TimeBin& other)
 
   if(timemax_==0 && timemin_==0)//empty bin
   {
-    timemin_ = other.timemin_;
-    timemax_ = other.timemax_; 
-    lsmin_=    other.lsmin_;
-    lsmax_=    other.lsmax_;
-    runmin_=   other.runmin_;
-    runmax_=   other.runmax_;
+    timemin_ =    other.timemin_;
+    timemax_ =    other.timemax_; 
+    intlumimin_ = other.intlumimin_;
+    intlumimax_ = other.intlumimax_; 
+    lsmin_=       other.lsmin_;
+    lsmax_=       other.lsmax_;
+    runmin_=      other.runmin_;
+    runmax_=      other.runmax_;
   }
   else
   {
     if(other.timemin_<timemin_ || other.runmin_<runmin_ || (other.runmin_==runmin_ && other.lsmin_<lsmin_))
     {
       timemin_=other.timemin_;
+      intlumimin_=other.intlumimin_;
       lsmin_=other.lsmin_;
       runmin_=other.runmin_;
     }
     if(other.timemax_>timemax_ || other.runmax_>runmax_ || (other.runmax_==runmax_ && other.lsmax_>lsmax_))
     {
       timemax_=other.timemax_;
+      intlumimax_=other.intlumimax_;
       lsmax_=other.lsmax_;
       runmax_=other.runmax_;
     }
@@ -117,6 +125,8 @@ void TimeBin::Reset()
   lsmax_=0;
   timemin_=0;
   timemax_=0;
+  intlumimin_=0;
+  intlumimax_=0;
   Nev_=0;
   if(h_scale_)
     h_scale_->Reset();
@@ -135,6 +145,8 @@ TimeBin& TimeBin::operator=(const TimeBin& other)
   lsmax_        = other.lsmax_;
   timemin_      = other.timemin_;
   timemax_      = other.timemax_;
+  intlumimin_   = other.intlumimin_;
+  intlumimax_   = other.intlumimax_;
   Nev_          = other.Nev_;
   for (auto variableindex : other.variablelist_)
     variablelist_[variableindex.first] = variableindex.second;
@@ -184,6 +196,8 @@ void TimeBin::BranchOutput(TTree* outtree)
   outtree->Branch("lsmax",&lsmax_);
   outtree->Branch("timemin",&timemin_);
   outtree->Branch("timemax",&timemax_);
+  outtree->Branch("intlumimin",&intlumimin_);
+  outtree->Branch("intlumimax",&intlumimax_);
   outtree->Branch("Nev",&Nev_);
   for(map<string,float>::iterator it=variablelist_.begin(); it!=variablelist_.end(); ++it)
   {
@@ -200,6 +214,8 @@ void TimeBin::BranchInput(TTree* intree)
   intree->SetBranchAddress("lsmax",&lsmax_);
   intree->SetBranchAddress("timemin",&timemin_);
   intree->SetBranchAddress("timemax",&timemax_);
+  intree->SetBranchAddress("intlumimin",&intlumimin_);
+  intree->SetBranchAddress("intlumimax",&intlumimax_);
   intree->SetBranchAddress("Nev",&Nev_);
   
   //loop over ttree keys to load all the other variables identified by the prefix "scale_"
@@ -210,9 +226,10 @@ void TimeBin::BranchInput(TTree* intree)
     TString branchname = branchList->At(ibranch)->GetName();
     if(branchname.BeginsWith("scale_"))
     {
-      branchname.Remove(0,6);//remove "scale_" prefix from the name
-      cout<<"branching "<<branchname.Data()<<endl;
-      intree->SetBranchAddress(branchname.Data(),&(variablelist_[branchname.Data()])); 
+      TString scalename = branchname;
+      scalename.Remove(0,6);//remove "scale_" prefix from the name
+      cout<<"branching "<<scalename.Data()<<endl;
+      intree->SetBranchAddress(branchname.Data(),&(variablelist_[scalename.Data()])); 
     }
   }
 

@@ -8,8 +8,8 @@ from optparse import OptionParser
 
 def HarnessLimits(harnessname):
     
-    folder_args = ROOT.TString(harnessname.replace("/","_")).Tokenize("_");
-    #folder_args.Print();
+    folder_args = ROOT.TString(harnessname.replace("/","_")).Tokenize("_")
+    #folder_args.Print()
     s_ietamin = ROOT.TString()
     s_ietamax = ROOT.TString()
     s_iphimin = ROOT.TString()
@@ -92,6 +92,10 @@ def NormalizeGraph(graph,refpointlist):
 parser = OptionParser()
 parser.add_option('--DrawDefaultPlots',  action='store_true',        dest='DrawDefaultPlots',   default=False,      help='draw default plots')
 parser.add_option('--DrawPlots',      action='store_true',        dest='DrawPlots',   default=False,      help='make per harness plots')
+parser.add_option('--LinearFit',      action='store_true',        dest='LinearFit',   default=False,      help='perform a linear fit of x vs y')
+parser.add_option("--GetPointCorrections", action='store_true',        dest='GetPointCorrections',   default=False,
+                  help='extract an IC set for each time bin and save it in a output txt file')
+
 parser.add_option("-i", "--inputdir", action="store", type="str", dest="inputdir",                    help="input directory")
 parser.add_option("-x", "--xname",    action="store", type="str", dest="xname",    default="0.5*(timemin+timemax)",  help="name in the tree of the x variable")
 parser.add_option("--t_min",    action="store", type="float", dest="t_min",    help="time min")
@@ -101,8 +105,6 @@ parser.add_option("--xupname",        action="store", type="str", dest="xupname"
 parser.add_option("-y", "--yname",    action="store", type="str", dest="yname",  default="scale_Eop_mean", help="name in the tree of the y variable")
 parser.add_option("--yuncname",           action="store", type="str", dest="yuncname", default="",     help="name in the tree of the y uncertainty variable")
 #parser.add_option("--NormalizetoIOV",     action="store", type="str", dest="NormalizetoIOV", default="0",  help="normalize scale to the average of the scale in the given IOV (e.g. 1,2,3) the default is 0 --> not normalized")
-parser.add_option("--GetPointCorrections", action='store_true',        dest='GetPointCorrections',   default=False,
-                  help='extract an IC set for each time bin and save it in a output txt file')
 parser.add_option("-o", "--outdir",    action="store",      type="str", dest="outdir",          default="",       help="output directory")
 
 (options, args) = parser.parse_args()
@@ -147,6 +149,167 @@ for harnessname, chain in chain_dict.items():
 
 print "%i graphs created"%len(graph_dict)
 
+################################################################################################################
+################################################################################################################
+
+if options.LinearFit:
+    ROOT.gStyle.SetOptFit(110)
+    fit_func = {} 
+    rp = ROOT.TFitResultPtr()
+    p0_map={} 
+    start_run = 0.
+    end_run = 0.
+    if("time" in options.xname):
+        start_run = (ROOT.TTimeStamp(2017,6,15,2,2,2)).AsDouble()#beginning of run 315257 (runA)
+        end_run = (ROOT.TTimeStamp(2018,12,30,23,59,59)).AsDouble()
+    elif("lumi" in options.xname):
+        start_run = 1.
+        end_run   = 100.
+ 
+    for harnessname, graph in graph_dict.items():
+        #print ">>>>>>> Fit harness "+harnessname
+        if (graph.GetN() == 0):
+            #print ">>>>>>> Empty graph"
+            continue
+        
+        minDate = ROOT.TMath.MinElement(graph.GetN(),graph.GetX())
+        maxDate = ROOT.TMath.MaxElement(graph.GetN(),graph.GetX())
+
+        fit_func[harnessname] = ROOT.TF1("fitfunc_"+harnessname,"[0]+[1]*x",minDate - 0.07*(maxDate-minDate), maxDate + 0.07*(maxDate-minDate))
+        fit_func[harnessname].SetParName(0,"intercept")
+        fit_func[harnessname].SetParName(1,"slope (1/fb^{-1})")
+
+        fStatus = 1
+        nTrials = 0
+        while( fStatus!=3 and nTrials<10 ):
+            rp = graph.Fit(fit_func[harnessname], "RSQME")
+            p0_map[harnessname] = fit_func[harnessname].Eval(start_run)
+            fStatus=rp.CovMatrixStatus()
+            ++nTrials
+            #if(fStatus==3):
+                #print ">>>>>>> Converged after %i trials"%nTrials
+            
+            nTrials = 0
+            if (fit_func[harnessname].GetChisquare() / fit_func[harnessname].GetNDF() < 1 or fStatus == 2):
+                print "[WARNING]: harness %s -> points very close to the line --> matrix not pos def"%harnessname
+            else:
+                if (fit_func[harnessname].GetChisquare() / fit_func[harnessname].GetNDF() > 1000 or fStatus != 3):
+                    print ">>>>>>> harness %s -> Bad chisquare"%harnessname
+                    fit_func[harnessname].SetParameter(0, 15.)
+                    fit_func[harnessname].SetParameter(1, -8e-10)
+                    while (fStatus != 3 and nTrials < 10):
+                        rp = graph.Fit(fit_func[harnessname], "RSQME")
+                        p0_map[harnessname] = fit_func[harnessname].Eval(start_run)
+                        fStatus=rp.CovMatrixStatus()
+                        ++nTrials
+                        #if(fStatus==3):
+                        #    cout<<">>>>>>> Converged after "<<nTrials+10<<" trials"<<endl
+                    if(fStatus != 3):
+                        print ">>>>>>> harness %s -> NOT Converged"%harnessname
+
+    #Fill histos
+    print "Filling histos"
+    h_chi2 =   ROOT.TH1F("h_chi2", "Reduced #Chi^{2} distribution; #Chi^{2}/NDF); ", 100, 0, 22)
+    h2_slope = ROOT.TH2F("map", "Fit slope map; i#phi; i#eta", 360,0.5,360.5,171,-85.5,85.5)
+    h2_chi2 =  ROOT.TH2F("m_chi2", "Fit #chi^{2} map; i#phi; i#eta", 360,0.5,360.5,171,-85.5,85.5)
+    h2_p0 = ROOT.TH2F("m_p0", "Fit intercept map; i#phi; i#eta", 360,0.5,360.5,171,-85.5,85.5)
+    h_etaring_slope = ROOT.TH1D("etaring_slope", "etaring_slope; i#eta; <slope>", 233, -116.5, 116.5)
+    h_etaring_p0 = ROOT.TH1D("etaring_p0", "etaring_p0; i#eta; <slope>", 233, -116.5, 116.5)
+
+    if("lumi" in options.xname):
+        h_slope = ROOT.TH1F("h_slope", "", 100, -3.e-3, 2.e-3)
+        h_p0 = ROOT.TH1F ("h_p0", "Fit intercept distribution; P_{0}", 100, 0.95,1.05)
+    else:
+        h_slope = ROOT.TH1F("h_slope", "", 100, -5.e-09, 2.e-09)
+        h_p0 = ROOT.TH1F ("h_p0", "Fit intercept distribution; P_{0}", 100, -1,3)
+
+    os.system("mkdir -p %s/fit/"%outdir)
+
+    for harnessname, graph in graph_dict.items():
+
+        #Fill 1D histos
+        h_slope.Fill(fit_func[harnessname].GetParameter(1))		
+        h_chi2.Fill(fit_func[harnessname].GetChisquare() / fit_func[harnessname].GetNDF())		
+        Npoints=graph.GetN()
+        h_p0.Fill(fit_func[harnessname].GetParameter(0))
+
+        #Fill 2D maps
+        ietamin,ietamax,iphimin,iphimax = HarnessLimits(harnessname)
+        for ieta in range(ietamin,ietamax+1):
+            if ieta==0:	continue
+            for iphi in range(iphimin,iphimax+1):
+                ibin=h2_slope.FindBin(iphi,ieta) 
+                h2_slope.SetBinContent(ibin, fit_func[harnessname].GetParameter(1))
+                h2_chi2.SetBinContent(ibin, fit_func[harnessname].GetChisquare() / fit_func[harnessname].GetNDF())
+                h2_p0.SetBinContent(ibin, p0_map[harnessname])
+
+    #Draw plots
+    print "Drawing histos"
+    cslope = ROOT.TCanvas("c","c", 1400, 700)
+    cslope.cd()
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetPalette(55)
+    if "time" in options.xname:
+        h2_slope.GetZaxis().SetRangeUser(-1.0e-07,1.0e-08)
+    else:
+        h2_slope.GetZaxis().SetRangeUser(-3.e-3,2.e-3)
+
+    #h2_slope.GetZaxis().SetNdivisions()
+    h2_slope.Draw("colz")
+    #cslope.Print(outdir+"/fit/slope_map.pdf")	
+    cslope.Print(outdir+"/fit/slope_map.png")	
+    cslope.Print(outdir+"/fit/slope_map.root")		
+
+    if "time" in options.xname:
+        h2_slope.GetZaxis().SetRangeUser(-12.e-09,3.e-9)
+    else:
+        h2_slope.GetZaxis().SetRangeUser(-1.e-3,1.e-3)
+
+    h2_slope.Draw("colz")
+    cslope.Print(outdir+"/fit/slope_map_2.pdf")	
+    cslope.Print(outdir+"/fit/slope_map_2.png")	
+    cslope.Print(outdir+"/fit/slope_map_2.root")
+    
+    ROOT.gStyle.SetOptStat(1111)
+    c_slope = ROOT.TCanvas()
+    c_slope.cd()
+    h_slope.Draw()
+    c_slope.Print(outdir+"/fit/h_slope.pdf")	
+    c_slope.SaveAs(outdir+"/fit/h_slope.root")	
+    c_slope.Print(outdir+"/fit/h_slope.png")	
+   
+    
+    c_p0_h = ROOT.TCanvas("c_p0_h","c_p0_h", 1400, 700)
+    c_p0_h.cd()
+    h_p0.Draw("colz")
+    c_p0_h.Print(outdir+"/fit/p0_h.pdf")
+    c_p0_h.Print(outdir+"/fit/p0_h.png")
+  
+    ROOT.gStyle.SetOptStat(0)
+    c_chi2 = ROOT.TCanvas("c_chi2","c_chi2", 1400, 700)
+    c_chi2.cd()
+    h2_chi2.GetZaxis().SetRangeUser(0,10)
+    h2_chi2.Draw("colz")
+    c_chi2.Print(outdir+"/fit/chi2_map.pdf")
+    c_chi2.Print(outdir+"/fit/chi2_map.png")
+    c_chi2.Print(outdir+"/fit/chi2_map.root")	
+  
+    c_p0 = ROOT.TCanvas("c_p0","c_p0", 1400, 700)
+    c_p0.cd()
+    h2_p0.GetZaxis().SetRangeUser(0.95,1.05)
+    h2_p0.Draw("colz")
+    c_p0.Print(outdir+"/fit/p0_map.pdf")
+    c_p0.Print(outdir+"/fit/p0_map.png")
+  
+    c_chi2_m = ROOT.TCanvas()
+    c_chi2_m.cd()
+    h_chi2.Draw()
+    c_chi2_m.Print(outdir+"/fit/chi2_distr.pdf")	
+    c_chi2_m.Print(outdir+"/fit/chi2_distr.png")	
+
+################################################################################################################
+################################################################################################################
+
 if options.DrawDefaultPlots:
     c = ROOT.TCanvas()
     os.system("mkdir %s/defaultplots"%outdir)
@@ -155,18 +318,40 @@ if options.DrawDefaultPlots:
         if chain.GetEntries()<=0: 
             continue
 
+        Nev_graph = GetGraph(chain,
+                                "timemin>%f && timemax<%f"%(options.t_min,options.t_max),#selection
+                                "0.5*(timemin+timemax)", "Nev",                  #x,y variables names
+                                "",            "")               #ex,ey, variables names
+
+        Nev_graph.SetMarkerStyle(20)
+        Nev_graph.SetMarkerColor(1)
+        Nev_graph.Draw("AP")
+        if("time" in options.xname):
+            Nev_graph.GetXaxis().SetTimeFormat("%d/%m%F1970-01-01 00:00:00")
+            Nev_graph.GetXaxis().SetTimeDisplay(1)
+        SetAxisTitle(Nev_graph.GetXaxis(),options.xname)
+        Nev_graph.GetYaxis().SetTitle("Number of events")
+        Nev_graph.GetYaxis().SetRangeUser(0.,30000.)
+        c.Print("%s/defaultplots/%s_Nev_vs_t.png"%(outdir,harnessname))
+        #c.Print("%s/defaultplots/%s.pdf"%(outdir,harnessname))
+        #c.SaveAs("%s/defaultplots/%s.root"%(outdir,harnessname))
+        #c.SaveAs("%s/defaultplots/%s.C"%(outdir,harnessname))
+        c.Clear()
+
+
         templatefit_graph = GetGraph(chain,
                                      "timemin>%f && timemax<%f"%(options.t_min,options.t_max),#selection
                                      options.xname, "scale_Eop_templatefit",                  #x,y variables names
-                                     "",            "scaleunc_Eop_templatefit")               #ex,ey, variables names
+                                     "",            "scale_unc_Eop_templatefit")               #ex,ey, variables names
         mean_graph = GetGraph(chain,
                               "timemin>%f && timemax<%f"%(options.t_min,options.t_max),#selection
                               options.xname, "scale_Eop_mean",                  #x,y variables names
-                              "",            "scaleunc_Eop_mean")               #ex,ey, variables names
+                              "",            "scale_unc_Eop_mean")               #ex,ey, variables names
         median_graph = GetGraph(chain,
                                 "timemin>%f && timemax<%f"%(options.t_min,options.t_max),#selection
                                 options.xname, "scale_Eop_median",                  #x,y variables names
-                                "",            "scaleunc_Eop_median")               #ex,ey, variables names
+                                "",            "scale_unc_Eop_median")               #ex,ey, variables names
+
 
         NormalizeGraph(templatefit_graph,[1])
         NormalizeGraph(mean_graph,[1])
@@ -186,8 +371,8 @@ if options.DrawDefaultPlots:
 
         multigraph.Draw("AP")
         if("time" in options.xname):
-            multigraph.GetXaxis().SetTimeFormat("%d/%m%F1970-01-01 00:00:00");
-            multigraph.GetXaxis().SetTimeDisplay(1);
+            multigraph.GetXaxis().SetTimeFormat("%d/%m%F1970-01-01 00:00:00")
+            multigraph.GetXaxis().SetTimeDisplay(1)
         SetAxisTitle(multigraph.GetXaxis(),options.xname)
         multigraph.GetYaxis().SetTitle("E/p scale")
 
@@ -220,8 +405,8 @@ if options.DrawPlots:
         graph.Draw("AP")
         graph.GetXaxis().SetLimits( xmin_graph-0.07*(xmax_graph-xmin_graph), xmax_graph+0.07*(xmax_graph-xmin_graph))
         if("time" in options.xname):
-            graph.GetXaxis().SetTimeFormat("%d/%m%F1970-01-01 00:00:00");
-            graph.GetXaxis().SetTimeDisplay(1);
+            graph.GetXaxis().SetTimeFormat("%d/%m%F1970-01-01 00:00:00")
+            graph.GetXaxis().SetTimeDisplay(1)
 
         SetAxisTitle(graph.GetXaxis(),options.xname)
         SetAxisTitle(graph.GetYaxis(),options.yname)
@@ -231,7 +416,8 @@ if options.DrawPlots:
         if ietamin<0:
             #        c.Print("%s/fit/EBm/%s.pdf"%(outdir,harnessname))
             c.Print("%s/fit/EBm/%s.png"%(outdir,harnessname))
-            #        c.SaveAs("%s/fit/EBm/%s.root"%(outdir,harnessname))
+            if ietamin==-25 and iphimin==41:
+                c.SaveAs("%s/fit/EBm/%s.root"%(outdir,harnessname))
             #        c.SaveAs("%s/fit/EBm/%s.C"%(outdir,harnessname))
         else: 
             #        c.Print("%s/fit/EBp/%s.pdf"%(outdir,harnessname))
@@ -270,27 +456,28 @@ if options.GetPointCorrections:
                     IC[iIOV] = {}
                     for ieta in range(-85,86):
                         IC[iIOV][ieta]={}
-                    
-            else:
-                for iIOV in range(0,len(IOV_list)):
-                    IOV = IOV_list[iIOV]
-                    if Npoints!=len(IOV_list):
-                        print "[ERROR]: missing IOVs in harness "+harnessname
-                        exit()
-                    if ( runmin[iIOV]!=IOV[0] or lsmin[iIOV]!=IOV[1] or runmax[iIOV]!=IOV[2] or lsmax[iIOV]!=IOV[3] ):
-                        print "[ERROR]: IOV mismatching in harness "+harnessname
-                        exit()
-                    else:
-                        ietamin,ietamax,iphimin,iphimax = HarnessLimits(harnessname)
-                        for ieta in range(ietamin,ietamax+1):
-                            for iphi in range(iphimin,iphimax+1):
-                                if(Escale[iIOV] != 0):
-                                    ICvalue = 1./Escale[iIOV]
-                                else:
-                                    ICvalue = 1.
-                                if(ICvalue<0 or ICvalue>10):
-                                    ICvalue = 1.
-                                IC[iIOV][ieta][iphi] = ICvalue
+
+#            ref_scale = Escale[0]
+#            if(ref_scale<=0.5 or ref_scale>2.):
+#                ref_scale=1.
+            ref_scale = 1.
+            for iIOV in range(0,len(IOV_list)):
+                IOV = IOV_list[iIOV]
+                if Npoints!=len(IOV_list):
+                    print "[ERROR]: missing IOVs in harness "+harnessname
+                    exit()
+                if ( runmin[iIOV]!=IOV[0] or lsmin[iIOV]!=IOV[1] or runmax[iIOV]!=IOV[2] or lsmax[iIOV]!=IOV[3] ):
+                    print "[ERROR]: IOV mismatching in harness "+harnessname
+                    exit()
+                else:
+                    ietamin,ietamax,iphimin,iphimax = HarnessLimits(harnessname)
+                    for ieta in range(ietamin,ietamax+1):
+                        for iphi in range(iphimin,iphimax+1):
+                            if( Escale[iIOV]<=0.5 or Escale[iIOV]>2.):
+                                ICvalue = ref_scale
+                            else:
+                                ICvalue = ref_scale/Escale[iIOV]
+                            IC[iIOV][ieta][iphi] = ICvalue
 
     print "writing output txt files"
     os.system("mkdir -p %s/PointCorrections/"%outdir)

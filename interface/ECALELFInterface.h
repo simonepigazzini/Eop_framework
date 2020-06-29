@@ -19,6 +19,7 @@
 #include "TFile.h"
 #include "TObject.h"
 #include "TString.h"
+#include "TBetterChain.h"
 
 using namespace std;
 
@@ -79,8 +80,8 @@ class ECALELFInterface
   TTreeFormula *selection_;
   std::map <string,TTreeFormula*> customvariablesmap_;
   std::string selection_str_;
-  std::map<std::string,TChain*> ch_;
-  TChain* chain_;
+  std::map<std::string,TBetterChain*> ch_;
+  TBetterChain* chain_;
   int Ncurrtree_;
 
   ///! Declaration of leaf types

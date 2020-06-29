@@ -29,21 +29,32 @@ void MonitoringManager::SetScaleVariable(const string &variablename)
     variabletype_=kICenergy_over_p;
   }
   else
-  {
-    variabletype_=kregular;
-    this -> AddVariable("Eop_monitoring_scale",variablename);//method of ECALELFInterface
-  }
+    if(variablename=="ICMee")
+    {
+      cout<<">> SetScaleVariable: special keyword detected"<<endl;
+      variabletype_=kICMee;
+    }
+    else
+    {
+      variabletype_=kregular;
+      this -> AddVariable("Eop_monitoring_scale",variablename);//method of ECALELFInterface
+    }
 }
 
 float MonitoringManager::GetScaleVariableValue(const int &iEle)
 {
   if(variabletype_==kICenergy_over_p)
+  {
     if(GetP(iEle)!=0)
       return GetICEnergy(iEle)/GetP(iEle);
     else
       return -999;
+  }
   else
-    return this -> GetVariableValue("Eop_monitoring_scale",iEle);//method of ECALELFInterface
+    if(variabletype_==kICMee)
+      return GetMee()/91. *sqrt(GetICEnergy(0)*GetICEnergy(1)) /sqrt(GetEnergy(0)*GetEnergy(1));
+    else
+      return this -> GetVariableValue("Eop_monitoring_scale",iEle);//method of ECALELFInterface
 }
 
 
@@ -71,6 +82,7 @@ TH1F* MonitoringManager::BuildTemplate()
 
 void  MonitoringManager::fitScale()
 {
+  cout<<">> fitScale in function"<<endl;
   //Parse the cfg
   string xname = conf_.GetOpt<string>    ("LaserMonitoring.scaleFit.xname");
   string yname = conf_.GetOpt<string>    ("LaserMonitoring.scaleFit.yname");
@@ -88,6 +100,7 @@ void  MonitoringManager::fitScale()
     TemplatePlotsFolder=conf_.GetOpt<string> ("LaserMonitoring.scaleFit.fitplots_folder");
 
   //Build the TGraph
+  cout<<">>> building the graph"<<endl;
   TGraphErrors* g_scale_vs_x = new TGraphErrors();
   g_scale_vs_x->SetName(label.c_str());
   g_scale_vs_x->SetTitle(label.c_str());
@@ -112,6 +125,7 @@ void  MonitoringManager::fitScale()
   }
 
   //Build the fit function
+  cout<<">>> building the fit function"<<endl;
   float xmin_fit=0;
   if(conf_.OptExist("LaserMonitoring.scaleFit.xmin_fit"))
     xmin_fit = conf_.GetOpt<float>   ("LaserMonitoring.scaleFit.xmin_fit");
@@ -123,10 +137,12 @@ void  MonitoringManager::fitScale()
     xmax_fit = conf_.GetOpt<float>   ("LaserMonitoring.scaleFit.xmax_fit");
   else
     if(xname=="time")
-      xmax_fit = timebins.begin()->GetTimemax()-1; 
+      xmax_fit = timebins.begin()->GetTimemax()-1;
+  cout<<">>> building fit function "<<func<<" defined in range ("<<xmin_fit<<","<<xmax_fit<<")"<<endl; 
   TF1* fitfunc = new TF1(Form("fitfunc_%s",label.c_str()), func.c_str(), xmin_fit, xmax_fit);
   
   //Fit the graph
+  cout<<">>> fitting"<<endl; 
   bool isgoodfit = FitUtils::PerseverantFit(g_scale_vs_x, fitfunc, fitopt, Ntrialfit, TemplatePlotsFolder);
 
   //Add the resulting parameters to the timebin
@@ -216,6 +232,32 @@ void  MonitoringManager::RunDivide()
 
   std::sort(timebins.begin(), timebins.end());
 
+  if(conf_.OptExist("LaserMonitoring.RunDivide.lumifilename"))
+  {
+    string  intlumi_vs_time_filename   = conf_.GetOpt<string>  ("LaserMonitoring.RunDivide.lumifilename");
+    LoadIntegratedLuminosity(intlumi_vs_time_filename);
+  }
+
+  last_accessed_bin_ = timebins.end();
+
+}
+
+void  MonitoringManager::LoadIntegratedLuminosity(string intlumi_vs_time_filename)
+{
+  cout<<"Loading integrated lumi info from "<<intlumi_vs_time_filename<<endl;
+  TFile* infile_intlumi_vs_time = new TFile(intlumi_vs_time_filename.c_str());
+  TGraph* g_intlumi_vs_time = (TGraph*)infile_intlumi_vs_time->Get("g_intlumi_time");
+  infile_intlumi_vs_time->Close();
+  if(!g_intlumi_vs_time)
+    cout<<"[ERROR]: cannot load g_intlumi_time from "<<intlumi_vs_time_filename<<endl;
+  else
+    for(std::vector<TimeBin>::iterator it_bin = timebins.begin(); it_bin<timebins.end(); ++it_bin)
+    {
+      double timemin = 1.*it_bin->GetTimemin(); 
+      it_bin->SetIntlumimin( g_intlumi_vs_time ->Eval(timemin) ); 
+      double timemax = 1.*it_bin->GetTimemax(); 
+      it_bin->SetIntlumimax( g_intlumi_vs_time ->Eval(timemax) ); 
+    }
 }
 
 
@@ -241,7 +283,7 @@ void  MonitoringManager::SaveTimeBins(std::string outfilename, std::string write
   outfile->Close();
 }
 
-void  MonitoringManager::LoadTimeBins(std::string option)
+void  MonitoringManager::LoadTimeBins(string inputfilename, string objname, std::string option)
 {
   cout<<">> Loading timebins"<<endl; 
   if(timebins.size()>0)
@@ -250,31 +292,23 @@ void  MonitoringManager::LoadTimeBins(std::string option)
     else
     {
       cout<<"[WARNING]: timebins not loaded because already in memory"<<endl
-	  <<"           if you want to overwrite call LoadTimeBins(\"RELOAD\")"<<endl;
+	  <<"           if you want to overwrite call LoadTimeBins(inputfilename, objname, \"RELOAD\")"<<endl;
       return;
     }
 
-  vector<string> inputconf = conf_.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
   TFile* inputfile;
   TTree* intree;
-  if(inputconf.size()==1)
+  if(objname=="")
   {
-    cout<<">> Loading TTree "<<label_<<" (default name) from file "<<inputconf.at(0)<<endl;
-    inputfile = new TFile(inputconf.at(0).c_str(),"READ");
-    intree = (TTree*) inputfile->Get(label_.c_str());
+    objname=label_;
+    cout<<">> Loading TTree "<<objname<<" (default name) from file "<<inputfilename<<endl;
   }
   else
-    if(inputconf.size()==2)
-    {
-      string objname = inputconf.at(0);
-      string inputfilename = inputconf.at(1);
-      cout<<">> Loading TTree "<<objname<<" (default name) from file "<<inputfilename<<endl;
-      inputfile = new TFile(inputfilename.c_str(),"READ");
-      intree = (TTree*) inputfile->Get(objname.c_str());
-    }
-    else
-      cout<<"[ERROR]: option LaserMonitoring.scaleMonitor.runranges has wrong syntax"<<endl;
-    
+    cout<<">> Loading TTree "<<objname<<" from file "<<inputfilename<<endl;
+
+  inputfile = new TFile(inputfilename.c_str(),"READ");
+  intree = (TTree*) inputfile->Get(objname.c_str());
+  
   if(!intree)
   {
     cout<<"[ERROR]: can't get tree "<<label_<<" in the file"<<endl;

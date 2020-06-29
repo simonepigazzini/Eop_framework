@@ -157,8 +157,28 @@ int ICmanager::FindIOVNumber(const UInt_t &run, const UShort_t &ls)
   for(int iIOV=0; iIOV<IOVlist_.size(); ++iIOV)
     if(IOVlist_.at(iIOV).Contains(run,ls))
       return iIOV;
-  cout<<"[ERROR]: can't find the given (run,ls) in the IOV list --> will use the first "<<endl;
+  //cout<<"[ERROR]: can't find the given (run,ls)=("<<run<<","<<ls<<") in the IOV list --> will use the first "<<endl;
   return -1;
+}
+
+
+int ICmanager::FindCloserIOVNumber(const UInt_t &run, const UShort_t &ls)
+{
+  int iIOV=FindIOVNumber(run,ls);
+  if(iIOV>=0)
+    return iIOV;
+
+  if(IOVlist_.size()==0)
+    return 0;
+
+  if(IOVlist_.at(0).GreaterThan(run,ls))
+    return 0;
+
+  for(int iIOV=0; iIOV<IOVlist_.size()-1; ++iIOV)
+    if(IOVlist_.at(iIOV).SmallerThan(run,ls) && IOVlist_.at(iIOV+1).GreaterThan(run,ls))
+      return iIOV;
+
+  return IOVlist_.size()-1;
 }
 
 TH2D* ICmanager::GetHisto(const int &iz, const char* name, const char* title)
