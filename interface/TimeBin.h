@@ -9,34 +9,7 @@
 #include "TH1F.h"
 #include "TTree.h"
 
-namespace TimeBin
-{
-  struct runlumi
-  {
-    UInt_t runNumber;
-    UShort_t lumiBlock;
-    bool operator<(const runlumi &other) const
-    {
-      if(runNumber < other.runNumber)
-	return true;
-      else
-	if(runNumber > other.runNumber)
-	  return false;
-	else//runNumber = other.runNumber                                                                                                             
-	  if(lumiBlock < other.lumiBlock)
-	    return true;
-	  else
-	    return false;
-    }    
-  };
-
-  struct timeweight
-  {
-    UInt_t time0;
-    UInt_t timef;
-    int weight=0;
-  };
-
+using namespace std;
 
 class TimeBin
 {
@@ -52,23 +25,44 @@ class TimeBin
   ~TimeBin();
 
   //---utils--
+  void     AddEvent(const UInt_t &run, const UShort_t &ls, const UInt_t &t);
+  void     AddEvent(const TimeBin& other);
   void     SetBinRanges(const UInt_t &runmin, const UInt_t &runmax, const UShort_t &lsmin, const UShort_t &lsmax, const UInt_t &timemin, const UInt_t &timemax);
+  UInt_t   DeltaT() const {return timemax_-timemin_;};
+  void     Reset();
   void     SetNev(const int &Nev_bin);
   bool     operator<(const TimeBin& other) const;
   void     BranchOutput(TTree* outtree);
   void     BranchInput(TTree* intree);
   TimeBin& operator=(const TimeBin& other);
   bool     Match(const UInt_t &run, const UShort_t &ls, const UInt_t &time) const;
+  bool     Match(const UInt_t &run, const UShort_t &ls) const;
   void     FillHisto(double x) const {h_scale_->Fill(x);} ;
   bool     InitHisto( char* name, char* title, const int &Nbin, const double &xmin, const double &xmax);
+  int      GetNev() const {return Nev_;};
+  double   GetXminScale() const {return h_scale_->GetXaxis()->GetXmin();};
+  double   GetXmaxScale() const {return h_scale_->GetXaxis()->GetXmax();};
+  bool     Fit(TF1* fitfunc, string fitopt="QRL+", int nTrial=10, string TemplatePlotsFolder="");
   double   GetMean();
+  double   GetMeanError();
   //double GetMean(double xmin, double xmax);
   //double GetMean(double evfraction);
   double   GetMedian();
+  double   GetIntegral(const float &xmin, const float &xmax);
+  double   GetBinWidth(const int &ibin);
+  UInt_t   GetTimemin() {return timemin_;}
+  UInt_t   GetTimemax() {return timemax_;}
+  UInt_t   GetTime()    {return 0.5*(timemax_+timemin_);}
+  UInt_t   GetIntlumimin() {return intlumimin_;}
+  UInt_t   GetIntlumimax() {return intlumimax_;}
+  UInt_t   GetIntlumi()    {return 0.5*(intlumimax_+intlumimin_);}
   //void   SaveAs(std::string outputfilename);  
   void     SetVariable(const std::string &variablename, const float &variablevalue);
+  void     SetIntlumimin(const double &intlumi) {intlumimin_ = intlumi;}
+  void     SetIntlumimax(const double &intlumi) {intlumimax_ = intlumi;}
   float    GetVariable(const std::string &variablename){return variablelist_[variablename];};
   void     PrintVariables();  
+  void     UpdateNev();
  protected:
   UInt_t runmin_;
   UInt_t runmax_;
@@ -76,13 +70,12 @@ class TimeBin
   UShort_t lsmax_;
   UInt_t timemin_;
   UInt_t timemax_;
+  double intlumimin_;
+  double intlumimax_;
   int Nev_;
-  TH1F* h_scale_;//in this way if I define a std::set<TimeBin>, I can modify the histo content 
-  std::map<std::string,float> variablelist_;//in this way if I define a std::set<TimeBins>, I can modify the map content
+  TH1F* h_scale_;
+  std::map<std::string,float> variablelist_;
 
-  //private:
-  //void BranchInputTree();
 
 };
-}
 #endif

@@ -15,12 +15,18 @@
 
 using namespace std;
 
+void PrintUsage()
+{
+  cout<<"Usage: LaserMonitoring.exe --cfg <cfg_filename> [--buildTemplate] [--runDivide] [--scaleMonitor] [--saveHistos] [--scaleFit]"<<endl;
+}
+  
 int main(int argc, char* argv[])
 {
   string cfgfilename   = "";
   bool   buildTemplate = false;
   bool   runDivide     = false;
   bool   scaleMonitor  = false;
+  bool   scaleFit      = false;
   bool   saveHistos    = false;
   
   //Parse the input options
@@ -34,14 +40,21 @@ int main(int argc, char* argv[])
       runDivide=true;
     if(string(argv[iarg])=="--scaleMonitor")
       scaleMonitor=true;
+    if(string(argv[iarg])=="--scaleFit")
+      scaleFit=true;
     if(string(argv[iarg])=="--saveHistos")
       saveHistos=true;
   }
       
   // parse the config file
+  if(cfgfilename=="")
+  {
+    PrintUsage();
+    return -1;
+  }
   CfgManager config;
   config.ParseConfigFile(cfgfilename.c_str());
-
+  
   // define the monitoring manager object
   MonitoringManager monitor(config);
 
@@ -68,7 +81,18 @@ int main(int argc, char* argv[])
 
   if(scaleMonitor)
   {
-    monitor.LoadTimeBins();
+
+    vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
+    string inputfilename="";
+    string objname="";
+    if(inputconf.size()==1)
+      inputfilename = inputconf.at(0);
+    else
+    {
+      objname = inputconf.at(0);
+      inputfilename = inputconf.at(1);
+    }
+    monitor.LoadTimeBins(inputfilename,objname);
 
     //fill the histos (one histo per time bin) 
     monitor.FillTimeBins();
@@ -79,9 +103,9 @@ int main(int argc, char* argv[])
     {
       TString method = config.GetOpt<string> (Form("LaserMonitoring.scaleMonitor.%s.method",scale.c_str()));
       method.ToLower(); //convert capital letters to lower case to avoid mis-understanding
-      //if(method=="templatefit")
-      //monitor.RunTemplateFit(scale);
-      //else
+      if(method=="templatefit")
+	monitor.RunTemplateFit(scale);
+      else
 	if(method=="mean")
 	  monitor.RunComputeMean(scale);
 	else
@@ -92,16 +116,14 @@ int main(int argc, char* argv[])
 	    cout<<"[ERROR]: unknown monitoring method \""<<method<<"\""<<endl;
 	    return -1;
 	  }
+      //save the output
+      string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
+      cout<<">> Saving timebins to "<<outputfilename<<endl;
+      monitor.SaveTimeBins(outputfilename);
+
     }
     cout<<"loaded+produced scales are:"<<endl;
     monitor.PrintScales();
-
-    
-    //save the output
-    string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.output");
-    cout<<">> Saving timebins to "<<outputfilename<<endl;
-    monitor.SaveTimeBins(outputfilename);
-
     //string writemethod = config.GetOpt<string> ("LaserMonitoring.scaleMonitor.outputmethod");
     //TFile* outfile = new TFile(outfilename.c_str(),writemethod.c_str());
     //monitor.SaveScales(outfile);
@@ -110,6 +132,29 @@ int main(int argc, char* argv[])
     //outfile->Close();
     
   }//end scaleMonitor
+
+  if(scaleFit)
+  {
+    vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleFit.inputfilename");
+    string inputfilename="";
+    string objname="";
+    if(inputconf.size()==1)
+      inputfilename = inputconf.at(0);
+    else
+    {
+      objname = inputconf.at(0);
+      inputfilename = inputconf.at(1);
+    }
+    monitor.LoadTimeBins(inputfilename,objname);
+    monitor.fitScale();
+    //save the output
+    string outputfilename = config.GetOpt<string> ("LaserMonitoring.scaleFit.output");
+    cout<<">> Saving timebins to "<<outputfilename<<endl;
+    monitor.SaveTimeBins(outputfilename);      
+  }
+    
+    
+
   
   return 0;
   

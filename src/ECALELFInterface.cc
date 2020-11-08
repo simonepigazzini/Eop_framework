@@ -67,7 +67,7 @@ ECALELFInterface::ECALELFInterface(CfgManager conf):
   std::vector<std::string> treelist = conf.GetOpt<std::vector<std::string> >("Input.treelist");
   for(auto treename : treelist)
   { 
-    ch_[treename] = new TChain(treename.c_str(),treename.c_str());
+    ch_[treename] = new TBetterChain(treename.c_str(),treename.c_str());
     std::vector<std::string> filelist = conf.GetOpt<std::vector<std::string> >(Form("Input.%s.filelist",treename.c_str()));
     for(auto filename : filelist)
       ch_[treename]->Add(filename.c_str());
@@ -80,10 +80,13 @@ ECALELFInterface::ECALELFInterface(CfgManager conf):
 	cerr<<"[WARNING]: unknown tree "<<treename<<endl;
   }
 
+  auto Nentries = ch_[treelist.at(0)]->GetEntries(); 
   for(unsigned int nchain = 1; nchain < treelist.size(); ++nchain)
   {
     cout << ">>> Adding chain " << treelist.at(nchain) << " as friend to chain " << treelist.at(0) << endl;
+    assert(Nentries == ch_[treelist.at(nchain)]->GetEntries());
     ch_[treelist.at(0)]->AddFriend(treelist.at(nchain).c_str(),"");
+    //ch_[treelist.at(0)]->BuildIndex("runNumber","eventNumber");
   }
   chain_=ch_[treelist.at(0)];
   Ncurrtree_=1;
@@ -109,16 +112,22 @@ ECALELFInterface::~ECALELFInterface()
 
   if(eeRing_)
     delete eeRing_;
+
+  for(auto customvariablesiterator : customvariablesmap_)
+    if(customvariablesiterator.second)
+      delete customvariablesiterator.second;
+
 }
 
 Long64_t ECALELFInterface::GetEntry(const Long64_t &entry)
 {
-  Long64_t i;
-  i=chain_->GetEntry(entry);
+  Long64_t i=chain_->GetEntry(entry);
   if(chain_->GetTreeNumber() != Ncurrtree_)
   {
     Ncurrtree_ = chain_->GetTreeNumber();
     selection_->UpdateFormulaLeaves();
+    for(auto customvariablesiterator : customvariablesmap_)
+      customvariablesiterator.second -> UpdateFormulaLeaves();
   }
   return i;
 }
@@ -265,4 +274,14 @@ void ECALELFInterface::PrintSettings()
 
   cout<<"> APPLIED SELECTION: "<<selection_->GetExpFormula().Data()<<endl;
   cout<<"----------------------------------------------------------------------------------"<<endl;
+}
+
+void ECALELFInterface::AddVariable(const string &name, const string &expr)
+{
+  customvariablesmap_[name] = new TTreeFormula(name.c_str(), expr.c_str(), chain_);
+}
+
+double ECALELFInterface::GetVariableValue(const string &name, const Int_t &i)
+{
+  return customvariablesmap_[name] -> EvalInstance(i);
 }

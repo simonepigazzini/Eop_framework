@@ -1,7 +1,6 @@
 #include "CfgManager.h"
 #include "CfgManagerT.h"
-#include "calibratorEB.h"
-#include "calibratorEE.h"
+#include "calibrator.h"
 
 #include <iostream>
 #include <string>
@@ -89,13 +88,7 @@ int main(int argc, char* argv[])
   config.ParseConfigFile(cfgfilename.c_str());
 
   //define the calibrator object to easily access to the ntuples data
-  //exploit the fact that both calibratorEB and calibratorEE inherits from virtual class calibrator
-  calibrator* calorimeter;
-  if(!EE)
-    calorimeter = new calibratorEB(config);
-  else
-    calorimeter = new calibratorEE(config);
-
+  calibrator* calorimeter = new calibrator(config);
   calorimeter->PrintSettings();
 
   //set the options directly given as input to the executable, overwriting, in case, the corresponding ones contained in the cfg

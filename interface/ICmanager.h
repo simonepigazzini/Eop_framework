@@ -16,10 +16,44 @@
 #include "TObject.h"
 #include "TF1.h"
 
-struct crystal
+typedef  std::map<int,std::map<int,std::map<int,double> > > IC; // ICvalue = IC [ix] [iy] [iz]
+
+struct IOV
 {
-  double IC;
-  int status;
+  UInt_t runmin;
+  UShort_t lsmin;
+  UInt_t runmax;
+  UShort_t lsmax;
+  bool Contains(const UInt_t &run, const UShort_t &ls) const
+  {
+    if(run < runmin)
+      return false;
+    if(run > runmax)
+      return false;
+    if( run==runmin && ls<lsmin )
+      return false;
+    if( run==runmax && ls>lsmax )
+      return false;
+ 
+    return true;
+  }
+  bool GreaterThan(const UInt_t &run, const UShort_t &ls) const
+  {
+    if(run > runmin)
+      return false;
+    if(run==runmin && ls > lsmin)
+      return false;
+    return true;
+  }
+  bool SmallerThan(const UInt_t &run, const UShort_t &ls) const
+  {
+    if(run < runmax)
+      return false;
+    if(run==runmax && ls < lsmax)
+      return false;
+    return true;
+  }
+    
 };
 
 class ICmanager
@@ -29,23 +63,27 @@ class ICmanager
   //---ctors---
   ICmanager(CfgManager conf);
   ICmanager(const std::vector<std::string> &ICcfg);
-  ICmanager(int ietamin, int ietamax, int iphimin, int iphimax);
+  ICmanager();
   //---dtor---
   ~ICmanager();
   //---utils--
-  Float_t  GetIC(const Int_t &ieta, const Int_t &iphi);
-  void     GetEtaboundaries(Float_t &ietamin, Float_t &ietamax) {ietamin=ietamin_; ietamax=ietamax_;}
-  void     GetPhiboundaries(Float_t &iphimin, Float_t &iphimax) {iphimin=iphimin_; iphimax=iphimax_;}
-  Int_t    GetNeta() {return Neta_;}
-  Int_t    GetNphi() {return Nphi_;}
-  TH2D*    GetHisto(const char* name="IC", const char* title="IC");
-  void     LoadIC(TH2D* IC);
+  Float_t  GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz);
+  Float_t  GetIC(const Int_t &ix, const Int_t &iy, const Int_t &iz, const Int_t &iIOV);
+  int      FindIOVNumber(const UInt_t &run, const UShort_t &ls);
+  int      FindCloserIOVNumber(const UInt_t &run, const UShort_t &ls);
+  void     GetXboundaries(const Int_t &iz, Float_t &ixmin, Float_t &ixmax) {ixmin=ixmin_.at(iz); ixmax=ixmax_.at(iz);}
+  void     GetYboundaries(const Int_t &iz, Float_t &iymin, Float_t &iymax) {iymin=iymin_.at(iz); iymax=iymax_.at(iz);}
+  Int_t    GetNx(const Int_t &iz) {return Nx_.at(iz);}
+  Int_t    GetNy(const Int_t &iz) {return Ny_.at(iz);}
+  TH2D*    GetHisto(const int &iz, const char* name="IC", const char* title="IC");
+  void     LoadIC(TH2D* IC, const int &iz);
   void     LoadIC(const std::vector<std::string> &ICcfg);
-  void     LoadIC(std::ifstream &infile);
+  IC       GetICFromtxt(const std::string &txtfilename);
+  IC       GetICFromTH2D(TH2D* ICmap, const int &iz);
   void     InitIC(Int_t ICvalue);
-  double&  operator()(const Int_t &ieta, const Int_t &iphi);
-  TH2D*    GetPulledIC(TH2D* h2_ICpull);
-  TH2D*    PullIC(TH2D* h2_ICpull);
+  double&  operator()(const Int_t &ix, const Int_t &iy, const Int_t &iz);
+  TH2D*    GetPulledIC(TH2D* h2_ICpull, const int &iz);
+  TH2D*    PullIC(TH2D* h2_ICpull, const int &iz);
   void     EtaringNormalizationEB();
   void     PrintSettings();
   //TH2D* EtaringNormalizationEE(); //TBD
@@ -69,12 +107,16 @@ class ICmanager
   bool EB;
   
  protected:
-  struct crystal *xtal_;
-  int Neta_,Nphi_,ietamin_,ietamax_,iphimin_,iphimax_;
-
- private:
-  Float_t  GetIC(const Int_t &index);
-  void     CreateIC();
+  std::vector <IC> timedependent_ICvalues_; //ICvalue = timedependent_ICvalues_[iIOV][ix][iy][iz]
+  std::vector <struct IOV> IOVlist_;
+  const int izmin_=-1;
+  const int izmax_=+1;
+  const std::map<int,int> Nx_ =    {{-1,100}, {0,171}, {1,100} };
+  const std::map<int,int> ixmin_ = {{-1,1},   {0,-85}, {1,1}   };
+  const std::map<int,int> ixmax_ = {{-1,100}, {0,85},  {1,100} };
+  const std::map<int,int> Ny_ =    {{-1,100}, {0,360}, {1,100} };
+  const std::map<int,int> iymin_ = {{-1,1},   {0,1},   {1,1}   };
+  const std::map<int,int> iymax_ = {{-1,100}, {0,360}, {1,100} };
 
 };
 

@@ -1,8 +1,8 @@
 #include "histoFunc.h"
-#include "calibratorEB.h"
-#include "calibratorEE.h"
+#include "calibrator.h"
 #include "CfgManager.h"
 #include "CfgManagerT.h"
+#include "FitUtils.h"
 
 #include <iostream>
 #include <iomanip>
@@ -25,7 +25,6 @@
 #define NEWLINE cout<<endl
 using namespace std;
 
-bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial=10, string TemplatePlotsFolder="");
 void PrintUsage()
 {
   cerr << ">>>>> usage:  CalibrationMomentum --cfg <configFileName>" << endl;
@@ -88,14 +87,7 @@ int main(int argc, char** argv)
   TH2D* h2_Mee_PElectron_EPositron_vs_phiElectron = new TH2D("Mee_vs_phiElectron", "Mee_vs_phiElectron", nPhiBins, -TMath::Pi(), TMath::Pi(), 2200, 0.2, 1.6);
 
   //**************************** loop on events
-  calibrator* data;
-
-  if(doEB)
-    data = new calibratorEB(config);
-  else
-    data = new calibratorEE(config);
-
-  //  calibrator data(config);
+  calibrator* data = new calibrator(config);
   
   long int Nentries = data->GetEntries();
   std::cout << "Loop in data events " << endl;
@@ -256,7 +248,7 @@ int main(int argc, char** argv)
 
     //fit positron correction
     //cout << "***** Positron ";
-    bool goodFit = PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), 10, TemplatePlotsFolder);
+    bool goodFit = FitUtils::PerseverantFit( h_Mee_PPositron_phibin.back(), fitfunc_Mee_PPositron.back(), "QRL+", 10, TemplatePlotsFolder);
     if(goodFit)
     {
       ++Ngoodfits;
@@ -277,7 +269,7 @@ int main(int argc, char** argv)
 
     //fit electron correction
     //cout << "***** Electron ";
-    goodFit = PerseverantFit( h_Mee_PElectron_phibin.back(), fitfunc_Mee_PElectron.back(), 10);
+    goodFit = FitUtils::PerseverantFit( h_Mee_PElectron_phibin.back(), fitfunc_Mee_PElectron.back(), "QRL+", 10);
     if(goodFit)
     {
       ++Ngoodfits;
@@ -359,31 +351,4 @@ int main(int argc, char** argv)
   
   return 0;
 
-}
-
-bool PerseverantFit( TH1D* h, TF1* fitfunc, int nTrial, string TemplatePlotsFolder)
-{
-  TFitResultPtr rp;
-  int fStatus;
-  TCanvas c_template_fit;//canvas to store the result of the template fit if requested by cfg
-#ifdef DEBUG
-  std::cout << "entries: " << h->GetEntries() << std::endl;
-#endif
-  fitfunc -> SetParameter(1, 0.99);
-  for(int nTrial = 0; nTrial < 10; ++nTrial)
-  {
-    c_template_fit.cd();
-    rp = h -> Fit(fitfunc, "QRL+");
-    fStatus = rp;
-    if(fStatus != 4 && fitfunc->GetParError(1) != 0. )
-    {
-      if(TemplatePlotsFolder!="")
-	c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
-      return true;
-    }
-  }
-  if(TemplatePlotsFolder!="")
-    c_template_fit.Print( Form("%s/fit_%s.png",TemplatePlotsFolder.c_str(), h->GetName()) );
-
-  return false;
 }

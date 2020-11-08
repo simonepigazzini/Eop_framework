@@ -81,3 +81,30 @@ def groupFiles(selected_filelist, extracalibtree_filelist, Nfiles_per_group):
     print str(len(grouped_selected_filelist))+" groups created"
     return grouped_selected_filelist, grouped_extracalibtree_filelist
 
+def groupFilesByTag(selected_filelist, extracalibtree_filelist, tag_list):
+    print "grouping "+str(len(selected_filelist))+" files in groups sharing the same value among the following "
+    print tag_list
+    grouped_selected_filelist = []
+    grouped_extracalibtree_filelist = []
+    
+    for tag in tag_list:
+        Nfiles_in_group=0
+        selected_filename_group_str=""
+        extracalibtree_filename_group_str=""
+        for ifile in range(0,len(selected_filelist)):
+            if tag in selected_filelist[ifile]:
+                selected_filename_group_str += selected_filelist[ifile]+" \\ \n"
+                extracalibtree_filename_group_str += extracalibtree_filelist[ifile]+" \\ \n"
+                Nfiles_in_group=Nfiles_in_group+1
+        if Nfiles_in_group>0: 
+            selected_filename_group_str = selected_filename_group_str[:-4]
+            extracalibtree_filename_group_str = extracalibtree_filename_group_str[:-4]
+            grouped_selected_filelist.append(selected_filename_group_str)
+            grouped_extracalibtree_filelist.append(extracalibtree_filename_group_str)
+        else:
+            print "[WARNING]: can't find any file matching "+tag+" tag"
+    print str(len(grouped_selected_filelist))+" groups created"
+    return grouped_selected_filelist, grouped_extracalibtree_filelist
+
+    
+
