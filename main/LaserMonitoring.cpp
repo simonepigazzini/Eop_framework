@@ -82,17 +82,26 @@ int main(int argc, char* argv[])
   if(scaleMonitor)
   {
 
-    vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
-    string inputfilename="";
-    string objname="";
-    if(inputconf.size()==1)
-      inputfilename = inputconf.at(0);
+    if(config.OptExist("LaserMonitoring.scaleMonitor.runtimes"))
+    {
+      auto runranges = config.GetOpt<vector<UInt_t> >("LaserMonitoring.scaleMonitor.runranges");
+      auto runtimes = config.GetOpt<vector<UInt_t> >("LaserMonitoring.scaleMonitor.runtimes");
+      monitor.LoadTimeBins(runranges, runtimes);
+    }
     else
     {
-      objname = inputconf.at(0);
-      inputfilename = inputconf.at(1);
+      vector<string> inputconf = config.GetOpt<vector<string> >("LaserMonitoring.scaleMonitor.runranges");
+      string inputfilename="";
+      string objname="";
+      if(inputconf.size()==1)
+        inputfilename = inputconf.at(0);
+      else
+      {
+        objname = inputconf.at(0);
+        inputfilename = inputconf.at(1);
+      }
+      monitor.LoadTimeBins(inputfilename,objname);
     }
-    monitor.LoadTimeBins(inputfilename,objname);
 
     //fill the histos (one histo per time bin) 
     monitor.FillTimeBins();

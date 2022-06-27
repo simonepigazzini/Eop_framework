@@ -283,6 +283,37 @@ void  MonitoringManager::SaveTimeBins(std::string outfilename, std::string write
   outfile->Close();
 }
 
+// create list of time bins from list of runs
+// this function is meant to use by the automatic prompt calibration system
+void  MonitoringManager::LoadTimeBins(std::vector<UInt_t>& runs, std::vector<UInt_t>& times, std::string option)
+{
+  cout<<">> Loading timebins"<<endl; 
+  if(timebins.size()>0)
+    if(option=="RELOAD")
+      timebins.clear();
+    else
+    {
+      cout<<"[WARNING]: timebins not loaded because already in memory"<<endl
+	  <<"           if you want to overwrite call LoadTimeBins(inputfilename, objname, \"RELOAD\")"<<endl;
+      return;
+    }
+  if(runs.size() < 2)
+    {
+      cout<<"[ERROR]: Not enough runs specified in LoadTimeBins (at least two required)"<<endl;
+      return;
+    }
+    
+  for(unsigned int i=1; i<runs.size(); ++i)
+  {      
+    TimeBin ibin;
+    ibin.SetBinRanges(runs[i-1], runs[i], 0, std::numeric_limits<bool>::max(), times[i-1], times[i]);
+    timebins.push_back(ibin);
+  }
+  std::sort(timebins.begin(), timebins.end());//It should be already ordered, just for security
+  cout<<">> Loaded "<<timebins.size()<<" bins"<<endl;
+  last_accessed_bin_=timebins.end();    
+}
+
 void  MonitoringManager::LoadTimeBins(string inputfilename, string objname, std::string option)
 {
   cout<<">> Loading timebins"<<endl; 

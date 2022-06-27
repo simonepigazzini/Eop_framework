@@ -32,6 +32,7 @@ class MonitoringManager: public calibrator
   TH1F* BuildTemplate();
   void  RunDivide();
   void  SaveTimeBins(std::string outfilename, std::string writemethod="RECREATE");
+  void  LoadTimeBins(std::vector<UInt_t>& runs, std::vector<UInt_t>& times, std::string option="");
   void  LoadTimeBins(string inputfilename, string objname="", std::string option="");
   void  LoadIntegratedLuminosity(string intlumi_vs_time_filename);
   void  FillTimeBins();

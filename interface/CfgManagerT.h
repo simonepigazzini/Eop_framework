@@ -28,6 +28,22 @@ template<> inline std::string CfgManager::GetOpt(std::string key, int opt)
     return opts_[key][opt];
 }   
 
+template<> inline std::vector<UInt_t> CfgManager::GetOpt(std::string key, int opt)
+{
+    key = "opts."+key;
+    Errors(key, opt);
+    std::vector<UInt_t> optsVect;
+    for(unsigned int iOpt=opt; iOpt<opts_[key].size(); ++iOpt)
+    {
+        UInt_t opt_val;
+        std::istringstream buffer(opts_[key][iOpt]);
+        buffer >> opt_val;
+        optsVect.push_back(opt_val);
+    }
+    
+    return optsVect;
+}    
+
 template<> inline std::vector<float> CfgManager::GetOpt(std::string key, int opt)
 {
     key = "opts."+key;
